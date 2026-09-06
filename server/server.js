@@ -1,17 +1,21 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 const connectDB = require('./config/db');
 
-// Initialize App & DB
 const app = express();
+
+// Connect Database
 connectDB();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Base Route Test
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+
+// Base Route
 app.get('/', (req, res) => {
   res.send('FitFlow API is running...');
 });
