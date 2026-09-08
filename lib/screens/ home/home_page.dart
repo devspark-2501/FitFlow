@@ -1,17 +1,22 @@
+import 'package:flutter/material.dart';
 import 'package:fitflow/components/home/daily_workout_card.dart';
 import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
-import 'package:flutter/material.dart';
+import 'package:fitflow/screens/auth/login_screen.dart';
 import '../../widgets/app_drawer.dart';
 
-// import '../../components/home/welcome_section.dart';
-// import '../../components/home/daily_workout_card.dart';
-// import '../../components/home/quick_actions.dart';
-// import '../../components/home/progress_card.dart';
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-class HomePage extends StatelessWidget {
-  HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Temporary auth state flag (we'll bind this to your JWT/Auth Provider next)
+  bool isLoggedIn = false;
+  String? userAvatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +24,6 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: false,
-
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
@@ -82,40 +86,75 @@ class HomePage extends StatelessWidget {
               ],
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none_rounded),
-                color: Colors.white,
-                onPressed: () {},
+              Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: isLoggedIn
+                    ? GestureDetector(
+                  onTap: () {
+                    // Profile options / Logout action
+                  },
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundImage: userAvatarUrl != null
+                        ? NetworkImage(userAvatarUrl!)
+                        : null,
+                    child: userAvatarUrl == null
+                        ? const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    )
+                        : null,
+                  ),
+                )
+                    : TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white.withOpacity(0.18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LoginScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.login_rounded, size: 18),
+                  label: const Text(
+                    "Login / Sign Up",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 6),
             ],
           ),
         ),
       ),
-
       drawer: AppDrawer(),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-
-            WelcomeSection(),
-
-            const SizedBox(height: 20),
-
-            DailyWorkoutCard(),
-
-            const SizedBox(height: 20),
-
-            QuickActions(),
-
-            const SizedBox(height: 20),
-
-            ProgressCard(),
+          children: const [
+            //WelcomeSection(),
+            SizedBox(height: 20),
+            //DailyWorkoutCard(),
+            SizedBox(height: 20),
+            //QuickActions(),
+            SizedBox(height: 20),
+            //ProgressCard(),
           ],
         ),
       ),
