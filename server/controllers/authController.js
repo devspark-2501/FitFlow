@@ -2,13 +2,10 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Helper to generate JWT token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -17,17 +14,14 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please enter all fields' });
     }
 
-    // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
     const user = await User.create({
       name,
       email,
@@ -48,8 +42,6 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// @route   POST /api/auth/login
-// @desc    Authenticate user & get token
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

@@ -5,17 +5,14 @@ const connectDB = require('./config/db');
 
 const app = express();
 
-// Connect Database
 connectDB();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 
-// Base Route
 app.get('/', (req, res) => {
   res.send('FitFlow API is running...');
 });
