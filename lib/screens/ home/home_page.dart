@@ -14,7 +14,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Temporary auth state flag (we'll bind this to your JWT/Auth Provider next)
+  // Temporary auth state flag (we will connect this to the JWT response next)
   bool isLoggedIn = false;
   String? userAvatarUrl;
 
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
                 child: isLoggedIn
                     ? GestureDetector(
                   onTap: () {
-                    // Profile options / Logout action
+                    // Profile / Logout menu placeholder
                   },
                   child: CircleAvatar(
                     radius: 18,
@@ -147,14 +147,14 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            //WelcomeSection(),
-            SizedBox(height: 20),
-            //DailyWorkoutCard(),
-            SizedBox(height: 20),
-            //QuickActions(),
-            SizedBox(height: 20),
-            //ProgressCard(),
+          children: [
+            WelcomeSection(),
+            const SizedBox(height: 20),
+            DailyWorkoutCard(),
+            const SizedBox(height: 20),
+            QuickActions(),
+            const SizedBox(height: 20),
+            ProgressCard(),
           ],
         ),
       ),
