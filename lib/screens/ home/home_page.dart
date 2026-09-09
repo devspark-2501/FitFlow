@@ -142,6 +142,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+
       drawer: AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
