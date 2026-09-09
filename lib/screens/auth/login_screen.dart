@@ -119,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: child,
           );
         },
+
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
