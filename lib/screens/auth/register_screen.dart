@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../profile/profile_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,7 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   void initState() {
     super.initState();
-    // Matching ambient blue background movement
     _bgAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -47,7 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -60,7 +62,42 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
 
     setState(() => _isLoading = true);
-    print('Registering user: $name ($email)');
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 && data['success'] == true) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(userData: data['user']),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Registration failed')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting to server: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -85,10 +122,10 @@ class _RegisterScreenState extends State<RegisterScreen>
               gradient: LinearGradient(
                 begin: _topAlignment.value,
                 end: _bottomAlignment.value,
-                colors: [
-                  const Color(0xFF0F172A), // Deep Navy
-                  const Color(0xFF1E3A8A), // Royal Electric Blue
-                  const Color(0xFF0284C7), // Vibrant Cyan
+                colors: const [
+                  Color(0xFF0F172A),
+                  Color(0xFF1E3A8A),
+                  Color(0xFF0284C7),
                 ],
               ),
             ),
@@ -145,8 +182,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 28),
-
-                  // Glassmorphism Card
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
