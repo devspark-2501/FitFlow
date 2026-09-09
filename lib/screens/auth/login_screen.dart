@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../profile/profile_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,7 +24,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    // Smooth infinite gradient animation
     _bgAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -46,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -58,13 +60,45 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     setState(() => _isLoading = true);
-    print('Logging in with: $email');
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(userData: data['user']),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Invalid credentials')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting to server: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       body: AnimatedBuilder(
         animation: _bgAnimationController,
@@ -74,10 +108,10 @@ class _LoginScreenState extends State<LoginScreen>
               gradient: LinearGradient(
                 begin: _topAlignment.value,
                 end: _bottomAlignment.value,
-                colors: [
-                  const Color(0xFF0F172A), // Deep Navy Blue
-                  const Color(0xFF1E3A8A), // Royal Electric Blue
-                  const Color(0xFF0284C7), // Bright Ocean Cyan
+                colors: const [
+                  Color(0xFF0F172A),
+                  Color(0xFF1E3A8A),
+                  Color(0xFF0284C7),
                 ],
               ),
             ),
@@ -93,7 +127,6 @@ class _LoginScreenState extends State<LoginScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // FitFlow Branded Glow Icon
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(20),
@@ -136,8 +169,6 @@ class _LoginScreenState extends State<LoginScreen>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 36),
-
-                  // Glassmorphism Card
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -237,10 +268,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
-                  // Switch to Sign Up
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
