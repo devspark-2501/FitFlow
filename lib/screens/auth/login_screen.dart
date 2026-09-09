@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'package:fitflow/screens/%20profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../profile/profile_screen.dart';
+// import '../profile/profile_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
