@@ -1,5 +1,6 @@
-import 'package:fitflow/Screens/%20home/home_page.dart';
-import 'package:fitflow/screens/%20planner/planner_page.dart';
+import 'package:fitflow/screens/home/home_page.dart';
+import 'package:fitflow/screens/planner/planner_page.dart';
+import 'package:fitflow/screens/profile/profile_screen.dart'; // Added Profile import
 import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
@@ -183,7 +184,21 @@ class AppDrawer extends StatelessWidget {
                     leading: Icon(Icons.person, color: primary),
                     title: const Text("Profile"),
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(context); // Close drawer
+
+                      // =========================================================
+                      // TEMP PROFILE ROUTE START
+                      // (Remove or update once authentication logic is attached)
+                      // =========================================================
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                      // =========================================================
+                      // TEMP PROFILE ROUTE END
+                      // =========================================================
                     },
                   ),
                   ListTile(
