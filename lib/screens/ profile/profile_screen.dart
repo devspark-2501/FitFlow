@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../components/profile/profile_header.dart';
 import '../../components/profile/activity_stats.dart';
+import '../../components/profile/plan_stats.dart';
+import '../../components/profile/my_plans_dashboard.dart';
 
 class ProfileScreen extends StatelessWidget {
   final Map<String, dynamic>? userData;
@@ -9,43 +11,29 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = userData?['name'] ?? 'FitFlow Member';
-    final email = userData?['email'] ?? 'athlete@fitflow.app';
+    final name = userData?['name'] ?? 'Tanush Mathur';
+    final email = userData?['email'] ?? 'tanush@fitflow.app';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: const Text('My Dashboard'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Column(
           children: [
             ProfileHeader(name: name, email: email),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            const PlanStats(),
+            const SizedBox(height: 20),
             const ActivityStats(),
+            const SizedBox(height: 28),
+            const MyPlansDashboard(),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0F172A),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              icon: const Icon(Icons.home_rounded),
-              label: const Text(
-                'Back to Home',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
           ],
         ),
       ),
