@@ -1,6 +1,9 @@
-import 'package:fitflow/screens/home/home_page.dart';
-import 'package:fitflow/screens/planner/planner_page.dart';
-import 'package:fitflow/screens/profile/profile_screen.dart'; // Added Profile import
+import 'package:fitflow/Screens/%20home/home_page.dart';
+import 'package:fitflow/screens/%20planner/planner_page.dart';
+import 'package:fitflow/screens/%20profile/profile_screen.dart';
+// import 'package:fitflow/screens/home/home_page.dart';
+// import 'package:fitflow/screens/planner/planner_page.dart';
+// import 'package:fitflow/screens/profile/profile_screen.dart'; // Added Profile import
 import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
