@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'package:fitflow/screens/%20profile/profile_screen.dart';
+import 'package:fitflow/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-// import '../profile/profile_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -66,7 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/api/auth/register'),
+        Uri.parse('http://localhost:5000/api/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
