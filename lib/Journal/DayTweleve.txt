@@ -1,0 +1,7 @@
+12/9/26
+
+now im bouta start codingggggg !!!!!!!!!
+will build an seprate email for linkind in!!!!!!!!!!
+and then send emails to 10 other people and then.......
+
+trynaa make the auth working and make the profile thats static rn working with DB
