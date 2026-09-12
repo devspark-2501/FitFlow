@@ -1,9 +1,6 @@
-import 'package:fitflow/Screens/%20home/home_page.dart';
-import 'package:fitflow/screens/%20planner/planner_page.dart';
-import 'package:fitflow/screens/%20profile/profile_screen.dart';
-// import 'package:fitflow/screens/home/home_page.dart';
-// import 'package:fitflow/screens/planner/planner_page.dart';
-// import 'package:fitflow/screens/profile/profile_screen.dart'; // Added Profile import
+import 'package:fitflow/screens/home/home_page.dart';
+import 'package:fitflow/screens/planner/planner_page.dart';
+import 'package:fitflow/screens/profile/profile_screen.dart';
 import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
@@ -48,7 +45,7 @@ class AppDrawer extends StatelessWidget {
   ];
 
   void _navigateToScreen(BuildContext context, String title) {
-    Navigator.pop(context); // Close drawer first
+    Navigator.pop(context);
 
     if (title == "Home") {
       Navigator.pushReplacement(
@@ -88,7 +85,6 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Drawer Header Banner
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -140,10 +136,7 @@ class AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 8),
-
-            // Navigation Items List
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -172,10 +165,7 @@ class AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
-
             const Divider(indent: 16, endIndent: 16),
-
-            // Profile & Settings Options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Column(
@@ -187,21 +177,13 @@ class AppDrawer extends StatelessWidget {
                     leading: Icon(Icons.person, color: primary),
                     title: const Text("Profile"),
                     onTap: () {
-                      Navigator.pop(context); // Close drawer
-
-                      // =========================================================
-                      // TEMP PROFILE ROUTE START
-                      // (Remove or update once authentication logic is attached)
-                      // =========================================================
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const ProfileScreen(),
                         ),
                       );
-                      // =========================================================
-                      // TEMP PROFILE ROUTE END
-                      // =========================================================
                     },
                   ),
                   ListTile(
@@ -217,7 +199,6 @@ class AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 10),
           ],
         ),

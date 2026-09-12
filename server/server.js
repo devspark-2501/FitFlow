@@ -7,11 +7,10 @@ const app = express();
 
 connectDB();
 
-// Explicitly allow all origins, headers, and methods for local development
+// Handle CORS cross-origin headers completely
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: true,
+  credentials: true,
 }));
 
 app.use(express.json());
