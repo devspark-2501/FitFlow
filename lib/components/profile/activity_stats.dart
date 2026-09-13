@@ -1,27 +1,49 @@
 import 'package:flutter/material.dart';
 
 class ActivityStats extends StatelessWidget {
-  const ActivityStats({super.key});
+  final Map<String, dynamic>? activity;
+
+  const ActivityStats({super.size, this.activity});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.15),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatTile('Workouts', '12', Icons.fitness_center_rounded, const Color(0xFF38BDF8)),
+          _buildStatTile(
+              'Workouts',
+              activity?['workouts']?.toString() ?? '0',
+              Icons.fitness_center_rounded,
+              const Color(0xFF2563EB)
+          ),
           _buildStatDivider(),
-          _buildStatTile('Calories', '3.4k', Icons.local_fire_department_rounded, const Color(0xFFF97316)),
+          _buildStatTile(
+              'Calories',
+              activity?['calories'] != null ? '${activity!['calories']} kcal' : '0 kcal',
+              Icons.local_fire_department_rounded,
+              const Color(0xFFF97316)
+          ),
           _buildStatDivider(),
-          _buildStatTile('Water', '2.5L', Icons.water_drop_rounded, const Color(0xFF06B6D4)),
+          _buildStatTile(
+              'Water',
+              activity?['water'] != null ? '${activity!['water']}L' : '0L',
+              Icons.water_drop_rounded,
+              const Color(0xFF0284C7)
+          ),
         ],
       ),
     );
@@ -30,22 +52,29 @@ class ActivityStats extends StatelessWidget {
   Widget _buildStatTile(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 28),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 22),
+        ),
         const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
+            color: Color(0xFF64748B),
           ),
         ),
       ],
@@ -54,9 +83,9 @@ class ActivityStats extends StatelessWidget {
 
   Widget _buildStatDivider() {
     return Container(
-      height: 40,
+      height: 36,
       width: 1,
-      color: Colors.white.withOpacity(0.15),
+      color: const Color(0xFFE2E8F0),
     );
   }
 }
