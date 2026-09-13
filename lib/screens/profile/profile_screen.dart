@@ -11,28 +11,37 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = userData?['name'] ?? 'Tanush Mathur';
-    final email = userData?['email'] ?? 'tanush@fitflow.app';
+    // Dynamic fallback to safely handle missing backend fields
+    final user = userData?['user'] ?? userData;
+    final String name = user?['name'] ?? 'User';
+    final String email = user?['email'] ?? 'No email provided';
+    final Map<String, dynamic>? planStats = user?['planStats'];
+    final Map<String, dynamic>? activity = user?['activityStats'];
+    final List<dynamic>? plans = user?['plans'];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('My Dashboard'),
-        backgroundColor: Colors.transparent,
+        title: const Text(
+          'My Profile',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.white,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
         child: Column(
           children: [
             ProfileHeader(name: name, email: email),
-            const SizedBox(height: 24),
-            const PlanStats(),
             const SizedBox(height: 20),
-            const ActivityStats(),
-            const SizedBox(height: 28),
-            const MyPlansDashboard(),
+            PlanStats(stats: planStats),
+            const SizedBox(height: 16),
+            ActivityStats(activity: activity),
+            const SizedBox(height: 24),
+            MyPlansDashboard(userPlans: plans),
             const SizedBox(height: 32),
           ],
         ),
