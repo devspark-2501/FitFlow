@@ -14,51 +14,41 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF38BDF8), Color(0xFF1E3A8A)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF38BDF8).withOpacity(0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFEFF6FF),
+            border: Border.all(color: const Color(0xFF3B82F6), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: Color(0xFF0F172A),
-              child: Icon(
-                Icons.person_rounded,
-                size: 60,
-                color: Colors.white,
-              ),
-            ),
-          ],
+            ],
+          ),
+          child: const Icon(
+            Icons.person_rounded,
+            size: 55,
+            color: Color(0xFF1D4ED8),
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         Text(
           name,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Color(0xFF1E293B),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           email,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+          style: const TextStyle(
+            color: Color(0xFF64748B),
             fontSize: 14,
           ),
         ),
