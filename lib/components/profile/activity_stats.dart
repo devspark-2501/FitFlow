@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ActivityStats extends StatelessWidget {
   final Map<String, dynamic>? activity;
 
-  const ActivityStats({super.size, this.activity});
+  const ActivityStats({super.key, this.activity});
 
   @override
   Widget build(BuildContext context) {
