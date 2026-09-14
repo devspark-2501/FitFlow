@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:fitflow/screens/auth/login_screen.dart';
 import 'package:fitflow/screens/home/home_page.dart';
 import 'package:fitflow/screens/planner/planner_page.dart';
 import 'package:fitflow/screens/profile/profile_screen.dart';
@@ -5,6 +7,7 @@ import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppDrawer extends StatelessWidget {
   AppDrawer({super.key});
@@ -71,6 +74,31 @@ class AppDrawer extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const WaterPage()),
+      );
+    }
+  }
+
+  Future<void> _navigateToProfile(BuildContext context) async {
+    Navigator.pop(context);
+    final prefs = await SharedPreferences.getInstance();
+    final userString = prefs.getString('userData');
+
+    if (!context.mounted) return;
+
+    if (userString != null) {
+      final userData = jsonDecode(userString);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileScreen(userData: userData),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ),
       );
     }
   }
@@ -176,15 +204,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                     leading: Icon(Icons.person, color: primary),
                     title: const Text("Profile"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigateToProfile(context),
                   ),
                   ListTile(
                     shape: RoundedRectangleBorder(
