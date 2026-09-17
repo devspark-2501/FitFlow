@@ -1,21 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db'); // Adjust path if db.js is located elsewhere
+const connectDB = require('./config/db');
 
 dotenv.config();
 
-// Connect to MongoDB
 connectDB();
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/water', require('./routes/water')); // Added water route
 
 const PORT = process.env.PORT || 5000;
 
