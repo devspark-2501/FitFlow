@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:fitflow/services/water_service.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WaterTracker extends StatefulWidget {
   final int dailyGoalMl;
@@ -16,19 +19,66 @@ class WaterTracker extends StatefulWidget {
 
 class _WaterTrackerState extends State<WaterTracker> {
   int _currentIntakeMl = 0;
-  final List<Map<String, String>> _logs = [];
+  List<Map<String, String>> _logs = [];
+  bool _isLoading = true;
+  String? _userId;
 
-  void _addWater(int amount) {
-    if (amount <= 0) return;
-    setState(() {
-      _currentIntakeMl += amount;
-      final now = TimeOfDay.now();
-      _logs.insert(0, {
-        'amount': '+$amount ml',
-        'time':
-        '${now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod}:${now.minute.toString().padLeft(2, '0')} ${now.period == DayPeriod.am ? 'AM' : 'PM'}',
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDataAndLogs();
+  }
+
+  Future<void> _loadUserDataAndLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userString = prefs.getString('userData');
+
+    if (userString != null) {
+      final userData = jsonDecode(userString);
+      _userId = userData['_id'] ?? userData['id'];
+      if (_userId != null) {
+        await _fetchTodayLogs();
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchTodayLogs() async {
+    if (_userId == null) return;
+    final data = await WaterService.fetchTodayWaterLogs(_userId!);
+
+    if (data != null && data['success'] == true && mounted) {
+      final List rawLogs = data['logs'] ?? [];
+      setState(() {
+        _currentIntakeMl = data['totalIntake'] ?? 0;
+        _logs = rawLogs.map((item) {
+          final timestamp = DateTime.parse(item['timestamp']);
+          final hour = timestamp.hour == 0 || timestamp.hour == 12 ? 12 : timestamp.hour % 12;
+          final period = timestamp.hour >= 12 ? 'PM' : 'AM';
+          final minute = timestamp.minute.toString().padLeft(2, '0');
+          return {
+            'amount': '+${item['amount']} ml',
+            'time': '$hour:$minute $period',
+          };
+        }).toList();
       });
-    });
+    }
+  }
+
+  Future<void> _addWater(int amount) async {
+    if (amount <= 0 || _userId == null) return;
+
+    final success = await WaterService.addWaterLog(_userId!, amount);
+    if (success) {
+      await _fetchTodayLogs();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save water log to server')),
+      );
+    }
   }
 
   void _showCustomIntakeDialog(Color primaryColor) {
@@ -86,8 +136,7 @@ class _WaterTrackerState extends State<WaterTracker> {
                     ),
                   ),
                   onPressed: () {
-                    final int? enteredAmount =
-                    int.tryParse(customController.text);
+                    final int? enteredAmount = int.tryParse(customController.text);
                     if (enteredAmount != null && enteredAmount > 0) {
                       _addWater(enteredAmount);
                       Navigator.pop(context);
@@ -113,14 +162,20 @@ class _WaterTrackerState extends State<WaterTracker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = Colors.blueAccent;
-    final int remainingMl =
-    (widget.dailyGoalMl - _currentIntakeMl).clamp(0, widget.dailyGoalMl);
-    final double progress =
-    (_currentIntakeMl / widget.dailyGoalMl).clamp(0.0, 1.0);
+    final int remainingMl = (widget.dailyGoalMl - _currentIntakeMl).clamp(0, widget.dailyGoalMl);
+    final double progress = (_currentIntakeMl / widget.dailyGoalMl).clamp(0.0, 1.0);
+
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Column(
       children: [
-        // Progress Card
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -175,8 +230,7 @@ class _WaterTrackerState extends State<WaterTracker> {
               ),
               const SizedBox(height: 20),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: primaryColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -199,7 +253,6 @@ class _WaterTrackerState extends State<WaterTracker> {
 
         const SizedBox(height: 16),
 
-        // Quick Add Buttons & Manual Custom Intake
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -257,7 +310,6 @@ class _WaterTrackerState extends State<WaterTracker> {
 
         const SizedBox(height: 16),
 
-        // History Log
         if (_logs.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -290,21 +342,18 @@ class _WaterTrackerState extends State<WaterTracker> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.water_drop,
-                                  color: primaryColor, size: 16),
+                              Icon(Icons.water_drop, color: primaryColor, size: 16),
                               const SizedBox(width: 8),
                               Text(
                                 log['amount']!,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
                           Text(
                             log['time']!,
                             style: TextStyle(
-                              color:
-                              theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface.withOpacity(0.5),
                               fontSize: 12,
                             ),
                           ),
