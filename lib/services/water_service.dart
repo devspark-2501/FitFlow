@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class WaterService {
+  // Update this URL if testing on a physical device (e.g., replace 127.0.0.1 with your machine local IP)
   static const String baseUrl = 'http://127.0.0.1:5000/api/water';
 
   static String getTodayDateString() {
