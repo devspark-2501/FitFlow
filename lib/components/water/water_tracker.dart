@@ -99,7 +99,7 @@ class _WaterTrackerState extends State<WaterTracker> {
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
           ),
           child: Column(
-            mainAxisSize: MinimumSize.min,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
