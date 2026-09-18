@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class WaterService {
-  // Update this URL if testing on a physical device (e.g., replace 127.0.0.1 with your machine local IP)
   static const String baseUrl = 'http://127.0.0.1:5000/api/water';
 
   static String getTodayDateString() {
@@ -33,6 +32,22 @@ class WaterService {
       final today = getTodayDateString();
       final response = await http.get(
         Uri.parse('$baseUrl/$userId/$today'),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Fetch range for historical bar charts & progress logs
+  static Future<Map<String, dynamic>?> fetchWaterHistory(String userId, int days) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/history/$userId?days=$days'),
       );
 
       if (response.statusCode == 200) {
