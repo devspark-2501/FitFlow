@@ -19,9 +19,12 @@ class WaterTracker extends StatefulWidget {
 
 class _WaterTrackerState extends State<WaterTracker> {
   int _currentIntakeMl = 0;
-  List<Map<String, String>> _logs = [];
+  List<Map<String, String>> _todayLogs = [];
+  Map<String, int> _historyData = {}; // Format: {"YYYY-MM-DD": totalMl}
+
   bool _isLoading = true;
   String? _userId;
+  int _selectedFilterDays = 7; // 7 or 30 days
 
   @override
   void initState() {
@@ -37,7 +40,7 @@ class _WaterTrackerState extends State<WaterTracker> {
       final userData = jsonDecode(userString);
       _userId = userData['_id'] ?? userData['id'];
       if (_userId != null) {
-        await _fetchTodayLogs();
+        await _fetchTodayAndHistoryLogs();
       }
     }
 
@@ -46,26 +49,34 @@ class _WaterTrackerState extends State<WaterTracker> {
     }
   }
 
-  Future<void> _fetchTodayLogs() async {
+  Future<void> _fetchTodayAndHistoryLogs() async {
     if (_userId == null) return;
-    final data = await WaterService.fetchTodayWaterLogs(_userId!);
 
-    if (data != null && data['success'] == true && mounted) {
-      final List rawLogs = data['logs'] ?? [];
-      setState(() {
-        _currentIntakeMl = data['totalIntake'] ?? 0;
-        _logs = rawLogs.map((item) {
-          final timestamp = DateTime.parse(item['timestamp']);
-          final hour = timestamp.hour == 0 || timestamp.hour == 12 ? 12 : timestamp.hour % 12;
-          final period = timestamp.hour >= 12 ? 'PM' : 'AM';
-          final minute = timestamp.minute.toString().padLeft(2, '0');
-          return {
-            'amount': '+${item['amount']} ml',
-            'time': '$hour:$minute $period',
-          };
-        }).toList();
-      });
+    // 1. Fetch Today's Logs
+    final todayData = await WaterService.fetchTodayWaterLogs(_userId!);
+    if (todayData != null && todayData['success'] == true && mounted) {
+      final List rawLogs = todayData['logs'] ?? [];
+      _currentIntakeMl = todayData['totalIntake'] ?? 0;
+      _todayLogs = rawLogs.map((item) {
+        final timestamp = DateTime.parse(item['timestamp']);
+        final hour = timestamp.hour == 0 || timestamp.hour == 12 ? 12 : timestamp.hour % 12;
+        final period = timestamp.hour >= 12 ? 'PM' : 'AM';
+        final minute = timestamp.minute.toString().padLeft(2, '0');
+        return {
+          'amount': '+${item['amount']} ml',
+          'time': '$hour:$minute $period',
+        };
+      }).toList();
     }
+
+    // 2. Fetch Historical Logs
+    final history = await WaterService.fetchWaterHistory(_userId!, _selectedFilterDays);
+    if (history != null && history['success'] == true && mounted) {
+      final Map<String, dynamic> rawHistory = history['data'] ?? {};
+      _historyData = rawHistory.map((key, value) => MapEntry(key, (value as num).toInt()));
+    }
+
+    setState(() {});
   }
 
   Future<void> _addWater(int amount) async {
@@ -73,7 +84,7 @@ class _WaterTrackerState extends State<WaterTracker> {
 
     final success = await WaterService.addWaterLog(_userId!, amount);
     if (success) {
-      await _fetchTodayLogs();
+      await _fetchTodayAndHistoryLogs();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to save water log to server')),
@@ -161,7 +172,7 @@ class _WaterTrackerState extends State<WaterTracker> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = Colors.blueAccent;
+    const primaryColor = Colors.blueAccent;
     final int remainingMl = (widget.dailyGoalMl - _currentIntakeMl).clamp(0, widget.dailyGoalMl);
     final double progress = (_currentIntakeMl / widget.dailyGoalMl).clamp(0.0, 1.0);
 
@@ -174,143 +185,88 @@ class _WaterTrackerState extends State<WaterTracker> {
       );
     }
 
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: primaryColor.withOpacity(0.15)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 12,
-                      backgroundColor: primaryColor.withOpacity(0.12),
-                      color: primaryColor,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 1. Daily Progress Circular Dial
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: primaryColor.withOpacity(0.15)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 140,
+                      height: 140,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 12,
+                        backgroundColor: primaryColor.withOpacity(0.12),
+                        color: primaryColor,
+                      ),
                     ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${(progress * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '$_currentIntakeMl / ${widget.dailyGoalMl} ml',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        Text(
+                          '$_currentIntakeMl / ${widget.dailyGoalMl} ml',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+                      ],
+                    ),
+                  ],
                 ),
-                child: Text(
-                  remainingMl > 0
-                      ? 'Wow! Just $remainingMl ml more to reach your daily goal!'
-                      : '🎉 Goal achieved! Excellent hydration today!',
-                  style: TextStyle(
-                    color: primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    remainingMl > 0
+                        ? 'Just $remainingMl ml remaining to hit target!'
+                        : '🎉 Goal achieved! Great job!',
+                    style: const TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: primaryColor.withOpacity(0.15)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Log Intake',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildAddButton(
-                    150,
-                    'Glass',
-                    Icons.local_drink,
-                    primaryColor,
-                        () => _addWater(150),
-                  ),
-                  _buildAddButton(
-                    250,
-                    'Cup',
-                    Icons.water_drop,
-                    primaryColor,
-                        () => _addWater(250),
-                  ),
-                  _buildAddButton(
-                    500,
-                    'Bottle',
-                    Icons.wine_bar,
-                    primaryColor,
-                        () => _addWater(500),
-                  ),
-                  _buildAddButton(
-                    0,
-                    'Custom',
-                    Icons.edit,
-                    primaryColor,
-                        () => _showCustomIntakeDialog(primaryColor),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        if (_logs.isNotEmpty)
+          // 2. Quick Action Buttons
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -322,50 +278,202 @@ class _WaterTrackerState extends State<WaterTracker> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Today\'s Registration Log',
+                  'Log Intake',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 10),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _logs.length,
-                  itemBuilder: (context, index) {
-                    final log = _logs[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.water_drop, color: primaryColor, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                log['amount']!,
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            log['time']!,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildAddButton(150, 'Glass', Icons.local_drink, primaryColor, () => _addWater(150)),
+                    _buildAddButton(250, 'Cup', Icons.water_drop, primaryColor, () => _addWater(250)),
+                    _buildAddButton(500, 'Bottle', Icons.wine_bar, primaryColor, () => _addWater(500)),
+                    _buildAddButton(0, 'Custom', Icons.edit, primaryColor, () => _showCustomIntakeDialog(primaryColor)),
+                  ],
                 ),
               ],
             ),
           ),
-      ],
+
+          const SizedBox(height: 16),
+
+          // 3. Analytics & Graph Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: primaryColor.withOpacity(0.15)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Hydration Progress',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    // Filters
+                    Row(
+                      children: [
+                        _buildFilterChip(7, '7 Days'),
+                        const SizedBox(width: 6),
+                        _buildFilterChip(30, '30 Days'),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildBarChart(primaryColor),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 4. Date-Wise History List
+          if (_historyData.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: primaryColor.withOpacity(0.15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Date-Wise History',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _historyData.length,
+                    separatorBuilder: (_, __) => const Divider(height: 16),
+                    itemBuilder: (context, index) {
+                      final dateStr = _historyData.keys.elementAt(index);
+                      final intake = _historyData[dateStr] ?? 0;
+                      final double liters = intake / 1000.0;
+                      final bool metTarget = intake >= widget.dailyGoalMl;
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                metTarget ? Icons.check_circle : Icons.water_drop,
+                                color: metTarget ? Colors.green : primaryColor,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                dateStr,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${liters.toStringAsFixed(1)} L (${intake} ml)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: metTarget ? Colors.green : theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(int days, String label) {
+    final isSelected = _selectedFilterDays == days;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black80)),
+      selected: isSelected,
+      selectedColor: Colors.blueAccent,
+      onSelected: (bool selected) {
+        if (selected) {
+          setState(() {
+            _selectedFilterDays = days;
+            _isLoading = true;
+          });
+          _fetchTodayAndHistoryLogs().then((_) {
+            if (mounted) setState(() => _isLoading = false);
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildBarChart(Color primaryColor) {
+    if (_historyData.isEmpty) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: Text('No history logs available yet')),
+      );
+    }
+
+    final entries = _historyData.entries.toList();
+    final maxMl = entries.map((e) => e.value).fold<int>(widget.dailyGoalMl, (a, b) => a > b ? a : b);
+
+    return SizedBox(
+      height: 140,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: entries.map((entry) {
+          final double barHeightRatio = (entry.value / maxMl).clamp(0.05, 1.0);
+          final bool targetReached = entry.value >= widget.dailyGoalMl;
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                '${(entry.value / 1000).toStringAsFixed(1)}L',
+                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _selectedFilterDays == 7 ? 18 : 6,
+                height: 90 * barHeightRatio,
+                decoration: BoxDecoration(
+                  color: targetReached ? Colors.green : primaryColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                entry.key.length >= 10 ? entry.key.substring(5) : entry.key,
+                style: const TextStyle(fontSize: 9, color: Colors.grey),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 
