@@ -44,7 +44,6 @@ class _ActivityStatsState extends State<ActivityStats> {
 
   @override
   Widget build(BuildContext context) {
-    // If props activity water is provided, fallback to it, otherwise use fetched liters
     final String waterDisplay = _todayWaterLiters > 0
         ? '${_todayWaterLiters.toStringAsFixed(1)}L'
         : (widget.activity?['water'] != null ? '${widget.activity!['water']}L' : '0L');
@@ -88,7 +87,6 @@ class _ActivityStatsState extends State<ActivityStats> {
             Icons.water_drop_rounded,
             const Color(0xFF0284C7),
                 () async {
-              // Navigate to water page and refresh upon returning
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const WaterPage()),
