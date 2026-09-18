@@ -20,11 +20,11 @@ class WaterTracker extends StatefulWidget {
 class _WaterTrackerState extends State<WaterTracker> {
   int _currentIntakeMl = 0;
   List<Map<String, String>> _todayLogs = [];
-  Map<String, int> _historyData = {}; // Format: {"YYYY-MM-DD": totalMl}
+  Map<String, int> _historyData = {};
 
   bool _isLoading = true;
   String? _userId;
-  int _selectedFilterDays = 7; // 7 or 30 days
+  int _selectedFilterDays = 7;
 
   @override
   void initState() {
@@ -52,7 +52,6 @@ class _WaterTrackerState extends State<WaterTracker> {
   Future<void> _fetchTodayAndHistoryLogs() async {
     if (_userId == null) return;
 
-    // 1. Fetch Today's Logs
     final todayData = await WaterService.fetchTodayWaterLogs(_userId!);
     if (todayData != null && todayData['success'] == true && mounted) {
       final List rawLogs = todayData['logs'] ?? [];
@@ -69,7 +68,6 @@ class _WaterTrackerState extends State<WaterTracker> {
       }).toList();
     }
 
-    // 2. Fetch Historical Logs
     final history = await WaterService.fetchWaterHistory(_userId!, _selectedFilterDays);
     if (history != null && history['success'] == true && mounted) {
       final Map<String, dynamic> rawHistory = history['data'] ?? {};
@@ -188,7 +186,6 @@ class _WaterTrackerState extends State<WaterTracker> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 1. Daily Progress Circular Dial
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -266,7 +263,6 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
-          // 2. Quick Action Buttons
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -300,7 +296,6 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
-          // 3. Analytics & Graph Section
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -322,7 +317,6 @@ class _WaterTrackerState extends State<WaterTracker> {
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    // Filters
                     Row(
                       children: [
                         _buildFilterChip(7, '7 Days'),
@@ -340,7 +334,6 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
-          // 4. Date-Wise History List
           if (_historyData.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(16),
@@ -411,7 +404,7 @@ class _WaterTrackerState extends State<WaterTracker> {
   Widget _buildFilterChip(int days, String label) {
     final isSelected = _selectedFilterDays == days;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black80)),
+      label: Text(label, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : Colors.black87)),
       selected: isSelected,
       selectedColor: Colors.blueAccent,
       onSelected: (bool selected) {
