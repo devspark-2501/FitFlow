@@ -2,6 +2,7 @@ import 'package:fitflow/components/water/hydration_calculator.dart';
 import 'package:fitflow/components/water/water_tracker.dart';
 import 'package:fitflow/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WaterPage extends StatefulWidget {
   const WaterPage({super.key});
@@ -11,27 +12,64 @@ class WaterPage extends StatefulWidget {
 }
 
 class _WaterPageState extends State<WaterPage> {
-  // Goal in milliliters (Default: null until calculated or set)
   int? dailyGoalMl;
   bool isGoalSet = false;
+  bool isLoading = true;
 
-  void _onGoalCalculated(int calculatedGoal) {
-    setState(() {
-      dailyGoalMl = calculatedGoal;
-      isGoalSet = true;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedGoal();
   }
 
-  void _resetGoal() {
-    setState(() {
-      isGoalSet = false;
-    });
+  Future<void> _loadSavedGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedGoal = prefs.getInt('water_daily_goal');
+
+    if (mounted) {
+      setState(() {
+        if (savedGoal != null && savedGoal > 0) {
+          dailyGoalMl = savedGoal;
+          isGoalSet = true;
+        }
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _onGoalCalculated(int calculatedGoal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('water_daily_goal', calculatedGoal);
+
+    if (mounted) {
+      setState(() {
+        dailyGoalMl = calculatedGoal;
+        isGoalSet = true;
+      });
+    }
+  }
+
+  Future<void> _resetGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('water_daily_goal');
+
+    if (mounted) {
+      setState(() {
+        dailyGoalMl = null;
+        isGoalSet = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final primaryColor = Colors.blueAccent;
+
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +84,7 @@ class _WaterPageState extends State<WaterPage> {
             ),
         ],
       ),
-      drawer: AppDrawer(),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -125,12 +163,14 @@ class _WaterPageState extends State<WaterPage> {
               // Dynamic View: Calculator or Tracker
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                child: isGoalSet
+                child: isGoalSet && dailyGoalMl != null
                     ? WaterTracker(
+                  key: ValueKey('Tracker_$dailyGoalMl'),
                   dailyGoalMl: dailyGoalMl!,
                   onResetGoal: _resetGoal,
                 )
                     : HydrationCalculator(
+                  key: const ValueKey('Calculator'),
                   onCalculate: _onGoalCalculated,
                 ),
               ),
