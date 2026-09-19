@@ -4,6 +4,7 @@ import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
 import 'package:fitflow/screens/auth/login_screen.dart';
+import 'package:fitflow/components/timer_page.dart';
 import '../../widgets/app_drawer.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,9 +15,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Temporary auth state flag (we will connect this to the JWT response next)
   bool isLoggedIn = false;
   String? userAvatarUrl;
+
+  // Active Alarm Status Flag
+  bool hasActiveAlarm = true;
+  String activeAlarmTime = "05:30 AM";
 
   @override
   Widget build(BuildContext context) {
@@ -86,13 +90,40 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             actions: [
+              // Alarm Notification Shortcut Icon
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.alarm, color: Colors.white),
+                    tooltip: "Alarm Status",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TimerPage()),
+                      );
+                    },
+                  ),
+                  if (hasActiveAlarm)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               Padding(
                 padding: const EdgeInsets.only(right: 12.0),
                 child: isLoggedIn
                     ? GestureDetector(
-                  onTap: () {
-                    // Profile / Logout menu placeholder
-                  },
+                  onTap: () {},
                   child: CircleAvatar(
                     radius: 18,
                     backgroundColor: Colors.white.withOpacity(0.2),
@@ -142,7 +173,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-
       drawer: AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -150,7 +180,60 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             WelcomeSection(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // Active Alarm Status Card Banner
+            if (hasActiveAlarm)
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.alarm_on, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Next Workout Alarm",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            activeAlarmTime,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TimerPage()),
+                        );
+                      },
+                      child: const Text("Manage"),
+                    ),
+                  ],
+                ),
+              ),
+
             DailyWorkoutCard(),
             const SizedBox(height: 20),
             QuickActions(),
