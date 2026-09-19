@@ -4,7 +4,7 @@ import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
 import 'package:fitflow/screens/auth/login_screen.dart';
-import 'package:fitflow/screens/timer/timer_page.dart';
+import '../timer/timer_page.dart';
 import '../../widgets/app_drawer.dart';
 
 class HomePage extends StatefulWidget {

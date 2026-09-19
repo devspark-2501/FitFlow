@@ -2,7 +2,63 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'alarm_section.dart';
 
+// 1. MAIN PAGE WIDGET
+class TimerPage extends StatefulWidget {
+  const TimerPage({super.key});
+
+  @override
+  State<TimerPage> createState() => _TimerPageState();
+}
+
+class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Timer & Alarm"),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: theme.colorScheme.primary,
+          tabs: const [
+            Tab(icon: Icon(Icons.hourglass_bottom), text: "Timer"),
+            Tab(icon: Icon(Icons.timer), text: "Stopwatch"),
+            Tab(icon: Icon(Icons.alarm), text: "Alarm"),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          TimerSection(audioPlayer: _audioPlayer),
+          const StopwatchSection(),
+          AlarmSection(audioPlayer: _audioPlayer),
+        ],
+      ),
+    );
+  }
+}
+
+// 2. TIMER SECTION
 class TimerSection extends StatefulWidget {
   final AudioPlayer audioPlayer;
 
@@ -220,6 +276,85 @@ class _TimerSectionState extends State<TimerSection> {
                 );
               },
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// 3. STOPWATCH SECTION
+class StopwatchSection extends StatefulWidget {
+  const StopwatchSection({super.key});
+
+  @override
+  State<StopwatchSection> createState() => _StopwatchSectionState();
+}
+
+class _StopwatchSectionState extends State<StopwatchSection> {
+  final Stopwatch _stopwatch = Stopwatch();
+  Timer? _timer;
+
+  void _toggleStopwatch() {
+    setState(() {
+      if (_stopwatch.isRunning) {
+        _stopwatch.stop();
+        _timer?.cancel();
+      } else {
+        _stopwatch.start();
+        _timer = Timer.periodic(const Duration(milliseconds: 30), (_) {
+          setState(() {});
+        });
+      }
+    });
+  }
+
+  void _resetStopwatch() {
+    setState(() {
+      _stopwatch.reset();
+      if (!_stopwatch.isRunning) {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final elapsed = _stopwatch.elapsed;
+    final formattedTime =
+        "${elapsed.inMinutes.remainder(60).toString().padLeft(2, '0')}:${elapsed.inSeconds.remainder(60).toString().padLeft(2, '0')}.${(elapsed.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0')}";
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            formattedTime,
+            style: TextStyle(fontSize: 54, fontWeight: FontWeight.bold, color: primary),
+          ),
+          const SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FloatingActionButton.large(
+                backgroundColor: primary,
+                onPressed: _toggleStopwatch,
+                child: Icon(_stopwatch.isRunning ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 36),
+              ),
+              const SizedBox(width: 20),
+              IconButton(
+                iconSize: 36,
+                icon: const Icon(Icons.refresh),
+                onPressed: _resetStopwatch,
+              ),
+            ],
+          ),
         ],
       ),
     );
