@@ -4,7 +4,7 @@ import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
 import 'package:fitflow/screens/auth/login_screen.dart';
-import 'package:fitflow/components/timer_page.dart';
+import 'package:fitflow/screens/timer/timer_page.dart';
 import '../../widgets/app_drawer.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,7 +18,6 @@ class _HomePageState extends State<HomePage> {
   bool isLoggedIn = false;
   String? userAvatarUrl;
 
-  // Active Alarm Status Flag
   bool hasActiveAlarm = true;
   String activeAlarmTime = "05:30 AM";
 
@@ -90,7 +89,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             actions: [
-              // Alarm Notification Shortcut Icon
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -181,8 +179,6 @@ class _HomePageState extends State<HomePage> {
           children: [
             WelcomeSection(),
             const SizedBox(height: 16),
-
-            // Active Alarm Status Card Banner
             if (hasActiveAlarm)
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
@@ -233,7 +229,6 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-
             DailyWorkoutCard(),
             const SizedBox(height: 20),
             QuickActions(),
