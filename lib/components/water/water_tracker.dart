@@ -74,7 +74,7 @@ class _WaterTrackerState extends State<WaterTracker> {
       _historyData = rawHistory.map((key, value) => MapEntry(key, (value as num).toInt()));
     }
 
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _addWater(int amount) async {
@@ -186,6 +186,7 @@ class _WaterTrackerState extends State<WaterTracker> {
     return SingleChildScrollView(
       child: Column(
         children: [
+          // 1. Progress Dial
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -263,6 +264,7 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
+          // 2. Log Quick Buttons
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -296,6 +298,7 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
+          // 3. Hydration Graph
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -334,6 +337,7 @@ class _WaterTrackerState extends State<WaterTracker> {
 
           const SizedBox(height: 16),
 
+          // 4. Date-wise list
           if (_historyData.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(16),
@@ -422,14 +426,15 @@ class _WaterTrackerState extends State<WaterTracker> {
   }
 
   Widget _buildBarChart(Color primaryColor) {
-    if (_historyData.isEmpty) {
-      return const SizedBox(
-        height: 120,
-        child: Center(child: Text('No history logs available yet')),
-      );
+    final todayStr = WaterService.getTodayDateString();
+
+    // Use history data if non-empty, otherwise populate dynamic map with today's intake
+    final Map<String, int> chartMap = Map.from(_historyData);
+    if (!chartMap.containsKey(todayStr) || (chartMap[todayStr] ?? 0) < _currentIntakeMl) {
+      chartMap[todayStr] = _currentIntakeMl;
     }
 
-    final entries = _historyData.entries.toList();
+    final entries = chartMap.entries.toList();
     final maxMl = entries.map((e) => e.value).fold<int>(widget.dailyGoalMl, (a, b) => a > b ? a : b);
 
     return SizedBox(
@@ -438,7 +443,7 @@ class _WaterTrackerState extends State<WaterTracker> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: entries.map((entry) {
-          final double barHeightRatio = (entry.value / maxMl).clamp(0.05, 1.0);
+          final double barHeightRatio = (entry.value / maxMl).clamp(0.08, 1.0);
           final bool targetReached = entry.value >= widget.dailyGoalMl;
 
           return Column(
@@ -446,13 +451,13 @@ class _WaterTrackerState extends State<WaterTracker> {
             children: [
               Text(
                 '${(entry.value / 1000).toStringAsFixed(1)}L',
-                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: _selectedFilterDays == 7 ? 18 : 6,
-                height: 90 * barHeightRatio,
+                height: 85 * barHeightRatio,
                 decoration: BoxDecoration(
                   color: targetReached ? Colors.green : primaryColor,
                   borderRadius: BorderRadius.circular(6),
@@ -461,7 +466,7 @@ class _WaterTrackerState extends State<WaterTracker> {
               const SizedBox(height: 6),
               Text(
                 entry.key.length >= 10 ? entry.key.substring(5) : entry.key,
-                style: const TextStyle(fontSize: 9, color: Colors.grey),
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
             ],
           );
