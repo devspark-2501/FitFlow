@@ -63,7 +63,7 @@ class _WaterPageState extends State<WaterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Colors.blueAccent;
+    const primaryColor = Colors.blueAccent;
 
     if (isLoading) {
       return const Scaffold(
@@ -84,7 +84,7 @@ class _WaterPageState extends State<WaterPage> {
             ),
         ],
       ),
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
