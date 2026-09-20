@@ -5,26 +5,31 @@ import 'package:audioplayers/audioplayers.dart';
 
 class TimerSection extends StatefulWidget {
   final AudioPlayer audioPlayer;
+  final Function(bool, String) onRingingChanged;
 
-  const TimerSection({super.key, required this.audioPlayer});
+  const TimerSection({
+    super.key,
+    required this.audioPlayer,
+    required this.onRingingChanged,
+  });
 
   @override
   State<TimerSection> createState() => _TimerSectionState();
 }
 
-class _TimerSectionState extends State<TimerSection> {
+class _TimerSectionState extends State<TimerSection> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   Timer? _timer;
   int _initialSeconds = 60;
   int _remainingSeconds = 60;
   bool _isRunning = false;
-  bool _isRinging = false;
-
-  final List<Map<String, String>> _history = [];
 
   void _startTimer() {
     if (_remainingSeconds <= 0) return;
     setState(() => _isRunning = true);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_remainingSeconds > 0) {
         setState(() => _remainingSeconds--);
       } else {
@@ -35,22 +40,9 @@ class _TimerSectionState extends State<TimerSection> {
 
   void _triggerAlarm() async {
     _pauseTimer();
-    setState(() => _isRinging = true);
     await widget.audioPlayer.setReleaseMode(ReleaseMode.loop);
     await widget.audioPlayer.play(AssetSource('alarm_sound.mp3'));
-
-    _history.insert(0, {
-      'duration': _formatTime(_initialSeconds),
-      'completedAt': TimeOfDay.now().format(context),
-    });
-  }
-
-  void _stopAlarmSound() async {
-    await widget.audioPlayer.stop();
-    setState(() {
-      _isRinging = false;
-      _remainingSeconds = _initialSeconds;
-    });
+    widget.onRingingChanged(true, "Timer Finished");
   }
 
   void _pauseTimer() {
@@ -60,13 +52,11 @@ class _TimerSectionState extends State<TimerSection> {
 
   void _resetTimer() {
     _pauseTimer();
-    _stopAlarmSound();
     setState(() => _remainingSeconds = _initialSeconds);
   }
 
   void _showTimerPicker() {
-    if (_isRunning || _isRinging) return;
-
+    if (_isRunning) return;
     Duration tempDuration = Duration(seconds: _remainingSeconds);
 
     showModalBottomSheet(
@@ -83,10 +73,7 @@ class _TimerSectionState extends State<TimerSection> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Cancel"),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
                   const Text("Set Duration", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   TextButton(
                     onPressed: () {
@@ -130,96 +117,52 @@ class _TimerSectionState extends State<TimerSection> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final primary = Theme.of(context).colorScheme.primary;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GestureDetector(
             onTap: _showTimerPicker,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
               decoration: BoxDecoration(
-                color: _isRinging ? Colors.red.withOpacity(0.1) : primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _isRinging ? Colors.red : primary.withOpacity(0.2), width: 2),
+                color: primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: primary.withOpacity(0.2), width: 2),
               ),
               child: Column(
                 children: [
                   Text(
                     _formatTime(_remainingSeconds),
-                    style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: _isRinging ? Colors.red : primary,
-                    ),
+                    style: TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: primary),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _isRinging ? "⏰ TIME'S UP!" : "Tap to adjust duration",
-                    style: TextStyle(
-                      color: _isRinging ? Colors.red : primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  const SizedBox(height: 8),
+                  Text("Tap to change duration", style: TextStyle(color: primary, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          if (_isRinging)
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          const SizedBox(height: 40),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FloatingActionButton.large(
+                backgroundColor: primary,
+                onPressed: _isRunning ? _pauseTimer : _startTimer,
+                child: Icon(_isRunning ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 40),
               ),
-              onPressed: _stopAlarmSound,
-              icon: const Icon(Icons.alarm_off),
-              label: const Text("STOP SOUND", style: TextStyle(fontWeight: FontWeight.bold)),
-            )
-          else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FloatingActionButton.large(
-                  backgroundColor: primary,
-                  onPressed: _isRunning ? _pauseTimer : _startTimer,
-                  child: Icon(_isRunning ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 36),
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  iconSize: 36,
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _resetTimer,
-                ),
-              ],
-            ),
-
-          const SizedBox(height: 32),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text("Recent Timer History", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(width: 24),
+              IconButton(
+                iconSize: 40,
+                icon: const Icon(Icons.refresh),
+                onPressed: _resetTimer,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          if (_history.isEmpty)
-            const Text("No completed timers yet today.", style: TextStyle(color: Colors.grey))
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _history.length,
-              itemBuilder: (context, index) {
-                final item = _history[index];
-                return ListTile(
-                  leading: const Icon(Icons.check_circle, color: Colors.green),
-                  title: Text("Completed ${item['duration']}"),
-                  subtitle: Text("Finished at ${item['completedAt']}"),
-                );
-              },
-            ),
         ],
       ),
     );
