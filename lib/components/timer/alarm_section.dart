@@ -1,55 +1,83 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../services/alarm_db_service.dart';
 
 class AlarmSection extends StatefulWidget {
   final AudioPlayer audioPlayer;
+  final Function(bool, String) onRingingChanged;
 
-  const AlarmSection({super.key, required this.audioPlayer});
+  const AlarmSection({
+    super.key,
+    required this.audioPlayer,
+    required this.onRingingChanged,
+  });
 
   @override
   State<AlarmSection> createState() => _AlarmSectionState();
 }
 
-class _AlarmSectionState extends State<AlarmSection> {
-  TimeOfDay _alarmTime = const TimeOfDay(hour: 5, minute: 30);
-  bool _isEnabled = false;
-  bool _isRinging = false;
-  Timer? _ticker;
+class _AlarmSectionState extends State<AlarmSection> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
-  final List<Map<String, String>> _alarmHistory = [
-    {'time': '05:30 AM', 'date': 'Yesterday', 'status': 'Dismissed'},
-    {'time': '04:50 AM', 'date': 'Today', 'status': 'Set'},
-  ];
+  List<Map<String, dynamic>> _savedAlarms = [];
+  Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
-    _startRealtimeChecker();
+    _loadAlarms();
+    _startChecker();
   }
 
-  void _startRealtimeChecker() {
+  Future<void> _loadAlarms() async {
+    final data = await AlarmDbService.instance.getAlarms();
+    setState(() => _savedAlarms = data);
+  }
+
+  void _startChecker() {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!_isEnabled || _isRinging) return;
       final now = TimeOfDay.now();
-      if (now.hour == _alarmTime.hour && now.minute == _alarmTime.minute) {
-        _triggerAlarm();
+      for (var alarm in _savedAlarms) {
+        if (alarm['isEnabled'] == 1 &&
+            alarm['hour'] == now.hour &&
+            alarm['minute'] == now.minute) {
+          _triggerAlarm(alarm['label']);
+          _toggleAlarm(alarm['id'], false);
+          break;
+        }
       }
     });
   }
 
-  void _triggerAlarm() async {
-    setState(() => _isRinging = true);
+  void _triggerAlarm(String label) async {
     await widget.audioPlayer.setReleaseMode(ReleaseMode.loop);
     await widget.audioPlayer.play(AssetSource('alarm_sound.mp3'));
+    widget.onRingingChanged(true, label);
   }
 
-  void _stopAlarm() async {
-    await widget.audioPlayer.stop();
-    setState(() {
-      _isRinging = false;
-      _isEnabled = false;
-    });
+  Future<void> _addNewAlarm() async {
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (time != null) {
+      await AlarmDbService.instance.insertAlarm("Alarm", time.hour, time.minute);
+      _loadAlarms();
+    }
+  }
+
+  Future<void> _toggleAlarm(int id, bool val) async {
+    await AlarmDbService.instance.updateAlarmStatus(id, val);
+    _loadAlarms();
+  }
+
+  Future<void> _deleteAlarm(int id) async {
+    await AlarmDbService.instance.deleteAlarm(id);
+    _loadAlarms();
+  }
+
+  String _formatTimeOfDay(int hour, int minute) {
+    final time = TimeOfDay(hour: hour, minute: minute);
+    return time.format(context);
   }
 
   @override
@@ -60,95 +88,66 @@ class _AlarmSectionState extends State<AlarmSection> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final primary = Theme.of(context).colorScheme.primary;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          final selected = await showTimePicker(
-                            context: context,
-                            initialTime: _alarmTime,
-                          );
-                          if (selected != null) {
-                            setState(() {
-                              _alarmTime = selected;
-                              _alarmHistory.insert(0, {
-                                'time': selected.format(context),
-                                'date': 'Today',
-                                'status': 'Configured'
-                              });
-                            });
-                          }
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text("Workout Alarm", style: TextStyle(color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text(
-                              _alarmTime.format(context),
-                              style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: primary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: _isEnabled,
-                        activeColor: primary,
-                        onChanged: (val) {
-                          setState(() => _isEnabled = val);
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_isRinging) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        onPressed: _stopAlarm,
-                        icon: const Icon(Icons.alarm_off, color: Colors.white),
-                        label: const Text("DISMISS ALARM", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Saved Alarms", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              IconButton.filled(
+                onPressed: _addNewAlarm,
+                icon: const Icon(Icons.add),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _savedAlarms.isEmpty
+                ? const Center(child: Text("No saved alarms. Tap + to create one."))
+                : ListView.builder(
+              itemCount: _savedAlarms.length,
+              itemBuilder: (context, index) {
+                final alarm = _savedAlarms[index];
+                final isEnabled = alarm['isEnabled'] == 1;
+
+                return Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    title: Text(
+                      _formatTimeOfDay(alarm['hour'], alarm['minute']),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isEnabled ? primary : Colors.grey,
                       ),
                     ),
-                  ],
-                ],
-              ),
+                    subtitle: Text(alarm['label']),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch(
+                          value: isEnabled,
+                          onChanged: (val) => _toggleAlarm(alarm['id'], val),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _deleteAlarm(alarm['id']),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 24),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text("Alarm History & Logs", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-          const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _alarmHistory.length,
-            separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (context, index) {
-              final item = _alarmHistory[index];
-              return ListTile(
-                leading: const Icon(Icons.alarm, color: Colors.blue),
-                title: Text(item['time']!),
-                subtitle: Text("${item['date']} • ${item['status']}"),
-              );
-            },
           ),
         ],
       ),
