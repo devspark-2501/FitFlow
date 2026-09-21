@@ -1,8 +1,9 @@
-import 'package:fitflow/components/timer/alarm_section.dart';
-import 'package:fitflow/components/timer/stopwatch_section.dart';
-import 'package:fitflow/components/timer/timer_section.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../components/timer/alarm_section.dart';
+import '../../components/timer/stopwatch_section.dart';
+import '../../components/timer/timer_section.dart';
+import '../../components/timer/ringing_overlay.dart';
 
 class TimerPage extends StatefulWidget {
   const TimerPage({super.key});
@@ -15,10 +16,27 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
   late TabController _tabController;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  bool _isRinging = false;
+  String _ringingTitle = "";
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  void _handleRinging(bool ringing, String title) {
+    setState(() {
+      _isRinging = ringing;
+      _ringingTitle = title;
+    });
+  }
+
+  void _stopRinging() async {
+    await _audioPlayer.stop();
+    setState(() {
+      _isRinging = false;
+    });
   }
 
   @override
@@ -30,29 +48,35 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Timer & Alarm"),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: theme.colorScheme.primary,
-          tabs: const [
-            Tab(icon: Icon(Icons.hourglass_bottom), text: "Timer"),
-            Tab(icon: Icon(Icons.timer), text: "Stopwatch"),
-            Tab(icon: Icon(Icons.alarm), text: "Alarm"),
-          ],
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text("Timer & Alarm"),
+            bottom: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(icon: Icon(Icons.hourglass_bottom), text: "Timer"),
+                Tab(icon: Icon(Icons.timer), text: "Stopwatch"),
+                Tab(icon: Icon(Icons.alarm), text: "Alarm"),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              TimerSection(audioPlayer: _audioPlayer, onRingingChanged: _handleRinging),
+              const StopwatchSection(),
+              AlarmSection(audioPlayer: _audioPlayer, onRingingChanged: _handleRinging),
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          TimerSection(audioPlayer: _audioPlayer),
-          const StopwatchSection(),
-          AlarmSection(audioPlayer: _audioPlayer),
-        ],
-      ),
+        if (_isRinging)
+          RingingOverlay(
+            title: _ringingTitle,
+            onStop: _stopRinging,
+          ),
+      ],
     );
   }
 }
