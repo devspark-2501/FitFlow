@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:fitflow/screens/auth/register_screen.dart';
 import 'package:fitflow/screens/home/home_page.dart';
+import 'package:fitflow/screens/profile/profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,7 +19,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   void _handleLogin() async {
-    // Phase 1: 4-second full-screen loading screen
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    // Phase 1: 4-Second Full-Screen Blue & White Loading Sequence
     setState(() {
       _isLoading = true;
     });
@@ -26,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Phase 2: 5-second animated stats/review screen
+    // Phase 2: 5-Second Animated FitFlow Intro/Stats Screen
     setState(() {
       _isLoading = false;
       _showReviewOverlay = true;
@@ -36,10 +48,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Phase 3: Route user back into the app
+    // Construct profile payload for session display
+    final mockUserData = {
+      'user': {
+        'name': email.split('@').first,
+        'email': email,
+        'planStats': {'activePlans': 2, 'completedPlans': 5},
+        'activityStats': {'totalWorkouts': 18, 'streakDays': 5},
+        'plans': ['Beginner Strength', 'Core Mastery'],
+      }
+    };
+
+    // Phase 3: Route directly to ProfileScreen
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(userData: mockUserData),
+      ),
           (route) => false,
     );
   }
@@ -76,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: Stack(
         children: [
-          // Main Form UI
+          // Main Login Form
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -127,6 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         TextField(
                           controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.email_outlined, size: 20),
                             hintText: "Email",
@@ -191,12 +217,40 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  // Navigation link to Account Registration Screen
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don't have an account?",
+                        style: TextStyle(color: Color(0xFF64748B)),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Sign Up",
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Step 1: 4-Second Full-Screen Blue & White Loader
+          // 4-Second Full-Screen Blue & White Loader Overlay
           if (_isLoading)
             Container(
               color: primaryColor,
@@ -231,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-          // Step 2: 5-Second Animated FitFlow Intro/Stats Screen
+          // 5-Second Animated FitFlow Intro/Stats Overlay
           if (_showReviewOverlay)
             Container(
               color: const Color(0xFF0F172A),
@@ -312,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      "Loading dashboard...",
+                      "Loading profile...",
                       style: TextStyle(color: Colors.white54, fontSize: 13),
                     ),
                   ],
