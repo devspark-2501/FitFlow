@@ -58,11 +58,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await prefs.setString('userData', jsonEncode(data['user']));
 
         if (!mounted) return;
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
             builder: (_) => ProfileScreen(userData: data['user']),
           ),
+              (route) => false,
         );
       } else {
         if (!mounted) return;
