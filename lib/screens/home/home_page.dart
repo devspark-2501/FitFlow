@@ -4,6 +4,7 @@ import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
 import 'package:fitflow/screens/auth/login_screen.dart';
+import 'package:fitflow/screens/profile/profile_page.dart';
 import '../timer/timer_page.dart';
 import '../../widgets/app_drawer.dart';
 
@@ -15,11 +16,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Set to true when user logs in (or read from shared_preferences)
   bool isLoggedIn = false;
   String? userAvatarUrl;
 
   bool hasActiveAlarm = true;
   String activeAlarmTime = "05:30 AM";
+
+  @override
+  void initState() {
+    super.initState();
+    // If user is already logged in, skip HomePage and push ProfilePage directly
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isLoggedIn) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+      }
+    });
+  }
+
+  void _logout() {
+    setState(() {
+      isLoggedIn = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Logged out successfully")),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,53 +114,23 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             actions: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.alarm, color: Colors.white),
-                    tooltip: "Alarm Status",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const TimerPage()),
-                      );
-                    },
-                  ),
-                  if (hasActiveAlarm)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.greenAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
+              IconButton(
+                icon: const Icon(Icons.alarm, color: Colors.white),
+                tooltip: "Alarm Status",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                  );
+                },
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 12.0),
                 child: isLoggedIn
-                    ? GestureDetector(
-                  onTap: () {},
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    backgroundImage: userAvatarUrl != null
-                        ? NetworkImage(userAvatarUrl!)
-                        : null,
-                    child: userAvatarUrl == null
-                        ? const Icon(
-                      Icons.person_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    )
-                        : null,
-                  ),
+                    ? IconButton(
+                  icon: const Icon(Icons.exit_to_app_rounded, color: Colors.white),
+                  tooltip: "Logout",
+                  onPressed: _logout,
                 )
                     : TextButton.icon(
                   style: TextButton.styleFrom(
@@ -171,7 +166,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      drawer: AppDrawer(),
+      drawer: const AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
