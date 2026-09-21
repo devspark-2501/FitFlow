@@ -10,41 +10,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppDrawer extends StatelessWidget {
-  AppDrawer({super.key});
+  const AppDrawer({super.key});
 
   final List<Map<String, dynamic>> menuItems = const [
-    {
-      "title": "Home",
-      "icon": Icons.home,
-    },
-    {
-      "title": "Workouts",
-      "icon": Icons.fitness_center,
-    },
-    {
-      "title": "Timer",
-      "icon": Icons.timer,
-    },
-    {
-      "title": "Planner",
-      "icon": Icons.calendar_month,
-    },
-    {
-      "title": "Progress",
-      "icon": Icons.bar_chart,
-    },
-    {
-      "title": "Water",
-      "icon": Icons.water_drop,
-    },
-    {
-      "title": "Exercises",
-      "icon": Icons.accessibility_new,
-    },
-    {
-      "title": "Challenges",
-      "icon": Icons.local_fire_department,
-    },
+    {"title": "Home", "icon": Icons.home},
+    {"title": "Workouts", "icon": Icons.fitness_center},
+    {"title": "Timer", "icon": Icons.timer},
+    {"title": "Planner", "icon": Icons.calendar_month},
+    {"title": "Progress", "icon": Icons.bar_chart},
+    {"title": "Water", "icon": Icons.water_drop},
+    {"title": "Exercises", "icon": Icons.accessibility_new},
+    {"title": "Challenges", "icon": Icons.local_fire_department},
   ];
 
   void _navigateToScreen(BuildContext context, String title) {
@@ -53,7 +29,7 @@ class AppDrawer extends StatelessWidget {
     if (title == "Home") {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else if (title == "Workouts") {
       Navigator.pushReplacement(
@@ -101,6 +77,20 @@ class AppDrawer extends StatelessWidget {
         ),
       );
     }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    Navigator.pop(context);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userData');
+
+    if (!context.mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
+    );
   }
 
   @override
@@ -196,27 +186,33 @@ class AppDrawer extends StatelessWidget {
             const Divider(indent: 16, endIndent: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                children: [
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    leading: Icon(Icons.person, color: primary),
-                    title: const Text("Profile"),
-                    onTap: () => _navigateToProfile(context),
-                  ),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    leading: Icon(Icons.settings, color: primary),
-                    title: const Text("Settings"),
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+              child: FutureBuilder<SharedPreferences>(
+                future: SharedPreferences.getInstance(),
+                builder: (context, snapshot) {
+                  final isLoggedIn = snapshot.hasData && snapshot.data!.containsKey('userData');
+
+                  return Column(
+                    children: [
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        leading: Icon(Icons.person, color: primary),
+                        title: Text(isLoggedIn ? "Profile" : "Login"),
+                        onTap: () => _navigateToProfile(context),
+                      ),
+                      if (isLoggedIn)
+                        ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                          title: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+                          onTap: () => _handleLogout(context),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
             const SizedBox(height: 10),
