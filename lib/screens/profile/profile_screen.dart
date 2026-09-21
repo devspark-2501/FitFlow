@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fitflow/screens/home/home_page.dart';
 import '../../components/profile/profile_header.dart';
 import '../../components/profile/activity_stats.dart';
 import '../../components/profile/plan_stats.dart';
@@ -9,9 +11,21 @@ class ProfileScreen extends StatelessWidget {
 
   const ProfileScreen({super.key, this.userData});
 
+  Future<void> _handleLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userData');
+
+    if (!context.mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Dynamic fallback to safely handle missing backend fields
     final user = userData?['user'] ?? userData;
     final String name = user?['name'] ?? 'User';
     final String email = user?['email'] ?? 'No email provided';
@@ -30,6 +44,13 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            tooltip: 'Log Out',
+            onPressed: () => _handleLogout(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
