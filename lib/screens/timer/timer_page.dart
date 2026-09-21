@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../components/timer/alarm_section.dart';
@@ -18,6 +19,7 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
 
   bool _isRinging = false;
   String _ringingTitle = "";
+  Timer? _snoozeTimer;
 
   @override
   void initState() {
@@ -39,10 +41,31 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
     });
   }
 
+  void _snoozeAlarm() async {
+    await _audioPlayer.stop();
+    setState(() {
+      _isRinging = false;
+    });
+
+    _snoozeTimer?.cancel();
+    _snoozeTimer = Timer(const Duration(minutes: 5), () async {
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _audioPlayer.play(AssetSource('alarm_sound.mp3'));
+      _handleRinging(true, "$_ringingTitle (Snoozed)");
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Snoozed for 5 minutes")),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
     _audioPlayer.dispose();
+    _snoozeTimer?.cancel();
     super.dispose();
   }
 
@@ -52,6 +75,14 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
       children: [
         Scaffold(
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
             title: const Text("Timer & Alarm"),
             bottom: TabBar(
               controller: _tabController,
@@ -75,6 +106,7 @@ class _TimerPageState extends State<TimerPage> with SingleTickerProviderStateMix
           RingingOverlay(
             title: _ringingTitle,
             onStop: _stopRinging,
+            onSnooze: _snoozeAlarm,
           ),
       ],
     );
