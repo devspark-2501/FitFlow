@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitflow/screens/home/home_page.dart';
-import 'package:fitflow/screens/profile/profile_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -59,11 +60,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     };
 
-    // Phase 3: Route user directly to ProfileScreen
+    // Save session to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userData', jsonEncode(mockUserData));
+
+    if (!mounted) return;
+
+    // Route user directly to HomePage with active session
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfileScreen(userData: mockUserData),
+        builder: (_) => HomePage(userData: mockUserData),
       ),
           (route) => false,
     );
@@ -236,7 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
 
-          // 4-Second Full-Screen Blue & White Loader Overlay
+          // 4-Second Full-Screen Loader Overlay
           if (_isLoading)
             Container(
               color: primaryColor,
@@ -344,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      "Directing to your profile...",
+                      "Directing to home page...",
                       style: TextStyle(color: Colors.white54, fontSize: 13),
                     ),
                   ],
