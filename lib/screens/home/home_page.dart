@@ -21,6 +21,18 @@ class _HomePageState extends State<HomePage> {
   bool hasActiveAlarm = true;
   String activeAlarmTime = "05:30 AM";
 
+  void _guardAction(VoidCallback onAuthenticated) {
+    final user = widget.userData?['user'] ?? widget.userData;
+    if (user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } else {
+      onAuthenticated();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -28,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     final bool isLoggedIn = user != null;
 
     return Scaffold(
-      extendBodyBehindAppBar: false,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
@@ -38,19 +50,19 @@ class _HomePageState extends State<HomePage> {
               end: Alignment.bottomRight,
               colors: [
                 theme.colorScheme.primary,
-                theme.colorScheme.primary.withOpacity(0.75),
+                theme.colorScheme.primary.withOpacity(0.85),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 12,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
             borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(24),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
             ),
           ),
           child: AppBar(
@@ -64,7 +76,7 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -73,16 +85,13 @@ class _HomePageState extends State<HomePage> {
                     size: 18,
                   ),
                 ),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text(
-                    "FitFlow",
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.white,
-                    ),
+                const SizedBox(width: 8),
+                const Text(
+                  "FitFlow",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -90,18 +99,17 @@ class _HomePageState extends State<HomePage> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.alarm, color: Colors.white, size: 20),
-                tooltip: "Alarm Status",
-                constraints: const BoxConstraints(),
-                padding: const EdgeInsets.symmetric(horizontal: 6),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TimerPage()),
-                  );
+                  _guardAction(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TimerPage()),
+                    );
+                  });
                 },
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 12.0, left: 4.0),
+                padding: const EdgeInsets.only(right: 14.0, left: 4.0),
                 child: isLoggedIn
                     ? GestureDetector(
                   onTap: () {
@@ -113,17 +121,17 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                   child: CircleAvatar(
-                    radius: 18,
+                    radius: 17,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
-                      radius: 16,
+                      radius: 15,
                       backgroundColor: theme.colorScheme.primary,
                       child: Text(
                         (user['name'] ?? 'U')[0].toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -132,9 +140,9 @@ class _HomePageState extends State<HomePage> {
                     : TextButton.icon(
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor: Colors.white.withOpacity(0.18),
+                    backgroundColor: Colors.white.withOpacity(0.2),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -149,13 +157,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.login_rounded, size: 16),
+                  icon: const Icon(Icons.login_rounded, size: 15),
                   label: const Text(
-                    "Login / Sign Up",
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "Login",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -165,67 +170,46 @@ class _HomePageState extends State<HomePage> {
       ),
       drawer: AppDrawer(),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             WelcomeSection(),
-            const SizedBox(height: 16),
-            if (hasActiveAlarm)
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.alarm_on, color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Next Workout Alarm",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            activeAlarmTime,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const TimerPage()),
-                        );
-                      },
-                      child: const Text("Manage"),
-                    ),
-                  ],
-                ),
-              ),
-            DailyWorkoutCard(),
+            WelcomeSection(
+              userData: widget.userData,
+              onActionTap: () {
+                _guardAction(() {});
+              },
+            ),
             const SizedBox(height: 20),
-            QuickActions(),
+            DailyWorkoutCard(
+              userData: widget.userData,
+              onStartTap: () {
+                _guardAction(() {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Starting workout session...')),
+                  );
+                });
+              },
+            ),
             const SizedBox(height: 20),
-            ProgressCard(),
+            QuickActions(
+              onActionTap: () {
+                _guardAction(() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                  );
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+            ProgressCard(
+              userData: widget.userData,
+              onTap: () {
+                _guardAction(() {});
+              },
+            ),
           ],
         ),
       ),
