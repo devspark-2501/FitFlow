@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../components/profile/profile_header.dart';
-import '../../components/profile/activity_stats.dart';
-import '../../components/profile/plan_stats.dart';
-import '../../components/profile/my_plans_dashboard.dart';
-import '../home/home_page.dart';
 
 class ProfileScreen extends StatelessWidget {
   final Map<String, dynamic>? userData;
@@ -15,9 +10,6 @@ class ProfileScreen extends StatelessWidget {
     final user = userData?['user'] ?? userData;
     final String name = user?['name'] ?? 'User';
     final String email = user?['email'] ?? 'No email provided';
-    final Map<String, dynamic>? planStats = user?['planStats'];
-    final Map<String, dynamic>? activity = user?['activityStats'];
-    final List<dynamic>? plans = user?['plans'];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -28,33 +20,34 @@ class ProfileScreen extends StatelessWidget {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomePage()),
-              );
-            }
+            Navigator.pop(context);
           },
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            ProfileHeader(name: name, email: email),
-            const SizedBox(height: 20),
-            PlanStats(stats: planStats),
-            const SizedBox(height: 16),
-            ActivityStats(activity: activity),
-            const SizedBox(height: 24),
-            MyPlansDashboard(userPlans: plans),
-            const SizedBox(height: 32),
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Text(
+                name[0].toUpperCase(),
+                style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              name,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              email,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
           ],
         ),
       ),
