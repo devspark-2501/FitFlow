@@ -1,48 +1,42 @@
 import 'package:flutter/material.dart';
 
 class QuickActions extends StatelessWidget {
-  QuickActions({super.key});
+  final VoidCallback onActionTap;
+
+  const QuickActions({
+    super.key,
+    required this.onActionTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        Text(
+        const Text(
           "Quick Actions",
           style: TextStyle(
-            fontSize: 21,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1565C0),
+            color: Color(0xFF0F172A),
           ),
         ),
-
-        SizedBox(height: 5),
-
-        Text(
+        const SizedBox(height: 4),
+        const Text(
           "Jump right into your fitness routine",
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
         ),
-
-        SizedBox(height: 15),
-
+        const SizedBox(height: 14),
         Row(
           children: [
-
             Expanded(
               child: _actionCard(
                 icon: Icons.timer_outlined,
-                title: "Start Timer",
-                subtitle: "Track your workout",
+                title: "Timer",
+                subtitle: "Track workouts",
               ),
             ),
-
-            SizedBox(width: 14),
-
+            const SizedBox(width: 12),
             Expanded(
               child: _actionCard(
                 icon: Icons.water_drop_outlined,
@@ -52,27 +46,22 @@ class QuickActions extends StatelessWidget {
             ),
           ],
         ),
-
-        SizedBox(height: 14),
-
+        const SizedBox(height: 12),
         Row(
           children: [
-
             Expanded(
               child: _actionCard(
                 icon: Icons.calendar_month_outlined,
-                title: "Today's Plan",
-                subtitle: "View your schedule",
+                title: "Planner",
+                subtitle: "View schedule",
               ),
             ),
-
-            SizedBox(width: 14),
-
+            const SizedBox(width: 12),
             Expanded(
               child: _actionCard(
                 icon: Icons.fitness_center_outlined,
                 title: "Exercises",
-                subtitle: "Explore exercises",
+                subtitle: "Explore moves",
               ),
             ),
           ],
@@ -86,110 +75,53 @@ class QuickActions extends StatelessWidget {
     required String title,
     required String subtitle,
   }) {
-    return Container(
-      padding: EdgeInsets.all(17),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-
-        borderRadius: BorderRadius.circular(20),
-
-        border: Border.all(
-          color: Color(0xFFDDEBFA),
-        ),
-
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF2196F3).withOpacity(0.08),
-            blurRadius: 15,
-            spreadRadius: 1,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-
-        children: [
-
-          Container(
-            width: 48,
-            height: 48,
-
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFFE3F2FD),
-                  Color(0xFFF5F9FF),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-
-              borderRadius: BorderRadius.circular(15),
-
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF2196F3).withOpacity(0.12),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-
-            child: Icon(
-              icon,
-              color: Color(0xFF2196F3),
-              size: 25,
-            ),
-          ),
-
-          SizedBox(height: 14),
-
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-
-          SizedBox(height: 4),
-
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
-
-          SizedBox(height: 12),
-
-          Row(
-            children: [
-
-              Text(
-                "Open",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2196F3),
-                ),
-              ),
-
-              SizedBox(width: 4),
-
-              Icon(
-                Icons.arrow_forward,
-                size: 15,
-                color: Color(0xFF2196F3),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onActionTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
