@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitflow/screens/auth/register_screen.dart';
 import 'package:fitflow/screens/home/home_page.dart';
-import 'package:fitflow/screens/profile/profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,10 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    // Construct profile payload for session display
+    // Construct user data payload
     final mockUserData = {
       'user': {
-        'name': email.split('@').first,
+        'name': email.contains('@') ? email.split('@').first : email,
         'email': email,
         'planStats': {'activePlans': 2, 'completedPlans': 5},
         'activityStats': {'totalWorkouts': 18, 'streakDays': 5},
@@ -59,11 +60,17 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     };
 
-    // Phase 3: Route directly to ProfileScreen
+    // Save session to SharedPreferences so main.dart preserves user state
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userData', jsonEncode(mockUserData));
+
+    if (!mounted) return;
+
+    // Route user directly to HomePage with active session preserved
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfileScreen(userData: mockUserData),
+        builder: (_) => HomePage(userData: mockUserData),
       ),
           (route) => false,
     );
@@ -101,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: Stack(
         children: [
-          // Main Login Form
+          // Main Login Form Form
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -218,7 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Navigation link to Account Registration Screen
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -366,7 +372,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      "Loading profile...",
+                      "Loading home dashboard...",
                       style: TextStyle(color: Colors.white54, fontSize: 13),
                     ),
                   ],
