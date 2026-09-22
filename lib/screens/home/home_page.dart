@@ -169,7 +169,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const WelcomeSection(),
+             WelcomeSection(),
             const SizedBox(height: 16),
             if (hasActiveAlarm)
               Container(
@@ -221,11 +221,11 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-            const DailyWorkoutCard(),
+            DailyWorkoutCard(),
             const SizedBox(height: 20),
-            const QuickActions(),
+            QuickActions(),
             const SizedBox(height: 20),
-            const ProgressCard(),
+            ProgressCard(),
           ],
         ),
       ),
