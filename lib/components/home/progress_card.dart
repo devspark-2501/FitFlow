@@ -1,118 +1,102 @@
 import 'package:flutter/material.dart';
 
 class ProgressCard extends StatelessWidget {
-  ProgressCard({super.key});
+  final Map<String, dynamic>? userData;
+  final VoidCallback onTap;
+
+  const ProgressCard({
+    super.key,
+    this.userData,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section Title
-        Text(
-          "Weekly Progress",
-          style: TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1565C0),
-          ),
-        ),
-        SizedBox(height: 5),
-        Text(
-          "Your activity summary this week",
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        SizedBox(height: 15),
+    final user = userData?['user'] ?? userData;
+    final bool isLoggedIn = user != null;
 
-        // Main Progress Container
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Color(0xFFDDEBFA),
+    // Active vs Empty Graph Heights
+    final List<double> weeklyData = isLoggedIn
+        ? [0.4, 0.7, 0.3, 0.9, 0.5, 0.2, 0.0]
+        : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Weekly Activity",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF2196F3).withOpacity(0.08),
-                blurRadius: 15,
-                spreadRadius: 1,
-                offset: Offset(0, 5),
-              ),
-            ],
           ),
-          child: Column(
-            children: [
-              // Metric Overview Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _statTile(
-                    icon: Icons.local_fire_department,
-                    value: "1,850",
-                    unit: "kcal",
-                    label: "Burned",
-                    color: Colors.orange,
-                  ),
-                  _divider(),
-                  _statTile(
-                    icon: Icons.timer_outlined,
-                    value: "140",
-                    unit: "mins",
-                    label: "Active Time",
-                    color: Color(0xFF2196F3),
-                  ),
-                  _divider(),
-                  _statTile(
-                    icon: Icons.check_circle_outline,
-                    value: "4/5",
-                    unit: "days",
-                    label: "Completed",
-                    color: Colors.green,
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Divider(color: Color(0xFFE3F2FD), thickness: 1),
-              SizedBox(height: 15),
+          const SizedBox(height: 4),
+          Text(
+            isLoggedIn ? "Your active summary this week" : "Sign in to record your workout metrics",
+            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _statTile("Burned", isLoggedIn ? "1,240" : "0", "kcal", Colors.orange),
+                    _divider(),
+                    _statTile("Active", isLoggedIn ? "95" : "0", "mins", const Color(0xFF2563EB)),
+                    _divider(),
+                    _statTile("Streak", isLoggedIn ? "4/7" : "0/7", "days", Colors.green),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+                const SizedBox(height: 16),
 
-              // Weekly Activity Bar Graph Representation
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _dayBar("Mon", 0.6, false),
-                  _dayBar("Tue", 0.85, false),
-                  _dayBar("Wed", 0.4, false),
-                  _dayBar("Thu", 0.95, true), // Active/Today
-                  _dayBar("Fri", 0.2, false),
-                  _dayBar("Sat", 0.0, false),
-                  _dayBar("Sun", 0.0, false),
-                ],
-              ),
-            ],
+                // Interactive Activity Bar Graph
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _dayBar("Mon", weeklyData[0], false),
+                    _dayBar("Tue", weeklyData[1], false),
+                    _dayBar("Wed", weeklyData[2], false),
+                    _dayBar("Thu", weeklyData[3], isLoggedIn),
+                    _dayBar("Fri", weeklyData[4], false),
+                    _dayBar("Sat", weeklyData[5], false),
+                    _dayBar("Sun", weeklyData[6], false),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _statTile({
-    required IconData icon,
-    required String value,
-    required String unit,
-    required String label,
-    required Color color,
-  }) {
+  Widget _statTile(String label, String value, String unit, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 22),
-        SizedBox(height: 6),
+        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+        const SizedBox(height: 4),
         RichText(
           text: TextSpan(
             children: [
@@ -121,25 +105,14 @@ class ProgressCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
+                  color: color,
                 ),
               ),
               TextSpan(
                 text: " $unit",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                ),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
               ),
             ],
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey[600],
           ),
         ),
       ],
@@ -147,53 +120,36 @@ class ProgressCard extends StatelessWidget {
   }
 
   Widget _divider() {
-    return Container(
-      height: 35,
-      width: 1,
-      color: Color(0xFFE3F2FD),
-    );
+    return Container(height: 28, width: 1, color: const Color(0xFFE2E8F0));
   }
 
   Widget _dayBar(String day, double heightFactor, bool isToday) {
     return Column(
       children: [
         Container(
-          height: 60,
-          width: 12,
+          height: 54,
+          width: 10,
           decoration: BoxDecoration(
-            color: Color(0xFFF5F9FF),
-            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(6),
           ),
           alignment: Alignment.bottomCenter,
-          child: FractionalTranslation(
-            translation: Offset(0, 0),
-            child: Container(
-              height: 60 * heightFactor,
-              width: 12,
-              decoration: BoxDecoration(
-                gradient: isToday
-                    ? LinearGradient(
-                  colors: [
-                    Color(0xFF1565C0),
-                    Color(0xFF2196F3),
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                )
-                    : null,
-                color: isToday ? null : Color(0xFF90CAF9),
-                borderRadius: BorderRadius.circular(10),
-              ),
+          child: Container(
+            height: 54 * heightFactor,
+            width: 10,
+            decoration: BoxDecoration(
+              color: isToday ? const Color(0xFF2563EB) : const Color(0xFF93C5FD),
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           day,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-            color: isToday ? Color(0xFF1565C0) : Colors.grey[600],
+            color: isToday ? const Color(0xFF2563EB) : const Color(0xFF64748B),
           ),
         ),
       ],
