@@ -1,55 +1,31 @@
-import 'package:fitflow/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitflow/components/home/daily_workout_card.dart';
 import 'package:fitflow/components/home/progress_card.dart';
 import 'package:fitflow/components/home/quick_actions.dart';
 import 'package:fitflow/components/home/welcome_section.dart';
 import 'package:fitflow/screens/auth/login_screen.dart';
-// import 'package:fitflow/screens/profile/profile_page.dart';
-import '../timer/timer_page.dart';
-import '../../widgets/app_drawer.dart';
+import 'package:fitflow/screens/profile/profile_screen.dart';
+import 'package:fitflow/screens/timer/timer_page.dart';
+import 'package:fitflow/widgets/app_drawer.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Map<String, dynamic>? userData;
+
+  const HomePage({super.key, this.userData});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // Set to true when user logs in (or read from shared_preferences)
-  bool isLoggedIn = false;
-  String? userAvatarUrl;
-
   bool hasActiveAlarm = true;
   String activeAlarmTime = "05:30 AM";
 
   @override
-  void initState() {
-    super.initState();
-    // If user is already logged in, skip HomePage and push ProfilePage directly
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (isLoggedIn) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
-      }
-    });
-  }
-
-  void _logout() {
-    setState(() {
-      isLoggedIn = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Logged out successfully")),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final user = widget.userData?['user'] ?? widget.userData;
+    final bool isLoggedIn = user != null;
 
     return Scaffold(
       extendBodyBehindAppBar: false,
@@ -81,12 +57,7 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             scrolledUnderElevation: 0,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
+            titleSpacing: 0,
             iconTheme: const IconThemeData(color: Colors.white),
             title: Row(
               children: [
@@ -99,25 +70,29 @@ class _HomePageState extends State<HomePage> {
                   child: const Icon(
                     Icons.fitness_center_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  "FitFlow",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    "FitFlow",
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.alarm, color: Colors.white),
+                icon: const Icon(Icons.alarm, color: Colors.white, size: 20),
                 tooltip: "Alarm Status",
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -126,12 +101,33 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 12.0),
+                padding: const EdgeInsets.only(right: 12.0, left: 4.0),
                 child: isLoggedIn
-                    ? IconButton(
-                  icon: const Icon(Icons.exit_to_app_rounded, color: Colors.white),
-                  tooltip: "Logout",
-                  onPressed: _logout,
+                    ? GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileScreen(userData: widget.userData),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: theme.colorScheme.primary,
+                      child: Text(
+                        (user['name'] ?? 'U')[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
                 )
                     : TextButton.icon(
                   style: TextButton.styleFrom(
@@ -141,8 +137,8 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                   ),
                   onPressed: () {
@@ -153,11 +149,11 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.login_rounded, size: 18),
+                  icon: const Icon(Icons.login_rounded, size: 16),
                   label: const Text(
                     "Login / Sign Up",
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -167,13 +163,13 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            WelcomeSection(),
+            const WelcomeSection(),
             const SizedBox(height: 16),
             if (hasActiveAlarm)
               Container(
@@ -225,11 +221,11 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-            DailyWorkoutCard(),
+            const DailyWorkoutCard(),
             const SizedBox(height: 20),
-            QuickActions(),
+            const QuickActions(),
             const SizedBox(height: 20),
-            ProgressCard(),
+            const ProgressCard(),
           ],
         ),
       ),
