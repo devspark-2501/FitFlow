@@ -11,7 +11,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract user dynamic values or fall back to defaults
     final userMap = userData?['user'] as Map<String, dynamic>? ?? userData ?? {};
+    final String userName = userMap['name'] ?? 'User';
+    final String userEmail = userMap['email'] ?? 'No email available';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -37,20 +40,20 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Header Component
-            ProfileHeader(userData: userMap),
+            // Pass required parameters here
+            ProfileHeader(
+              name: userName,
+              email: userEmail,
+            ),
             const SizedBox(height: 20),
 
-            // Plan Stats Component
-            PlanStats(userData: userMap),
+            PlanStats(),
             const SizedBox(height: 20),
 
-            // Activity Stats Component
-            ActivityStats(userData: userMap),
+            ActivityStats(),
             const SizedBox(height: 20),
 
-            // My Plans Dashboard Component
-            MyPlansDashboard(userData: userMap),
+            MyPlansDashboard(),
             const SizedBox(height: 24),
           ],
         ),
