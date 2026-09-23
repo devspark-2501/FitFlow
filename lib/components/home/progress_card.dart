@@ -12,13 +12,25 @@ class ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = userData?['user'] ?? userData;
-    final bool isLoggedIn = user != null;
+    final user = userData?['user'] as Map<String, dynamic>? ?? userData ?? {};
 
-    // Active vs Empty Graph Heights
-    final List<double> weeklyData = isLoggedIn
-        ? [0.4, 0.7, 0.3, 0.9, 0.5, 0.2, 0.0]
-        : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    // Safely extract stats or fall back to zero/N/A
+    final String burnedKcal = user['burnedKcal']?.toString() ?? '0';
+    final String activeMins = user['activeMins']?.toString() ?? '0';
+    final String streakDays = user['streakDays']?.toString() ?? '0/7';
+
+    // Parse weekly activity factors (expects a List<double> from backend, or empty list)
+    final List<dynamic> rawWeekly = user['weeklyActivity'] as List<dynamic>? ?? [];
+    final List<double> weeklyData = List.generate(7, (index) {
+      if (index < rawWeekly.length && rawWeekly[index] is num) {
+        return (rawWeekly[index] as num).toDouble();
+      }
+      return 0.0;
+    });
+
+    final bool hasData = rawWeekly.any((val) => (val as num? ?? 0) > 0) ||
+        burnedKcal != '0' ||
+        activeMins != '0';
 
     return InkWell(
       onTap: onTap,
@@ -36,7 +48,9 @@ class ProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            isLoggedIn ? "Your active summary this week" : "Sign in to record your workout metrics",
+            hasData
+                ? "Your active summary this week"
+                : "No workout activity logged yet for this week",
             style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 14),
@@ -59,29 +73,27 @@ class ProgressCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _statTile("Burned", isLoggedIn ? "1,240" : "0", "kcal", Colors.orange),
+                    _statTile("Burned", burnedKcal, "kcal", Colors.orange),
                     _divider(),
-                    _statTile("Active", isLoggedIn ? "95" : "0", "mins", const Color(0xFF2563EB)),
+                    _statTile("Active", activeMins, "mins", const Color(0xFF2563EB)),
                     _divider(),
-                    _statTile("Streak", isLoggedIn ? "4/7" : "0/7", "days", Colors.green),
+                    _statTile("Streak", streakDays, "days", Colors.green),
                   ],
                 ),
                 const SizedBox(height: 20),
                 const Divider(color: Color(0xFFF1F5F9), thickness: 1),
                 const SizedBox(height: 16),
-
-                // Interactive Activity Bar Graph
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _dayBar("Mon", weeklyData[0], false),
-                    _dayBar("Tue", weeklyData[1], false),
-                    _dayBar("Wed", weeklyData[2], false),
-                    _dayBar("Thu", weeklyData[3], isLoggedIn),
-                    _dayBar("Fri", weeklyData[4], false),
-                    _dayBar("Sat", weeklyData[5], false),
-                    _dayBar("Sun", weeklyData[6], false),
+                    _dayBar("Mon", weeklyData[0]),
+                    _dayBar("Tue", weeklyData[1]),
+                    _dayBar("Wed", weeklyData[2]),
+                    _dayBar("Thu", weeklyData[3]),
+                    _dayBar("Fri", weeklyData[4]),
+                    _dayBar("Sat", weeklyData[5]),
+                    _dayBar("Sun", weeklyData[6]),
                   ],
                 ),
               ],
@@ -123,7 +135,8 @@ class ProgressCard extends StatelessWidget {
     return Container(height: 28, width: 1, color: const Color(0xFFE2E8F0));
   }
 
-  Widget _dayBar(String day, double heightFactor, bool isToday) {
+  Widget _dayBar(String day, double heightFactor) {
+    final bool hasValue = heightFactor > 0;
     return Column(
       children: [
         Container(
@@ -135,10 +148,10 @@ class ProgressCard extends StatelessWidget {
           ),
           alignment: Alignment.bottomCenter,
           child: Container(
-            height: 54 * heightFactor,
+            height: 54 * heightFactor.clamp(0.0, 1.0),
             width: 10,
             decoration: BoxDecoration(
-              color: isToday ? const Color(0xFF2563EB) : const Color(0xFF93C5FD),
+              color: hasValue ? const Color(0xFF2563EB) : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
             ),
           ),
@@ -148,8 +161,7 @@ class ProgressCard extends StatelessWidget {
           day,
           style: TextStyle(
             fontSize: 10,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-            color: isToday ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+            color: hasValue ? const Color(0xFF2563EB) : const Color(0xFF64748B),
           ),
         ),
       ],
