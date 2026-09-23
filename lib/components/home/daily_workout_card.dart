@@ -12,14 +12,17 @@ class DailyWorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = userData?['user'] ?? userData;
-    final bool isLoggedIn = user != null;
+    final user = userData?['user'] as Map<String, dynamic>? ?? userData ?? {};
 
-    final String workoutTitle = isLoggedIn ? "Full Body Mastery" : "Beginner Starter Routine";
-    final String duration = isLoggedIn ? "35 min" : "15 min";
-    final String calories = isLoggedIn ? "280 kcal" : "100 kcal";
-    final String level = isLoggedIn ? "Intermediate" : "Beginner";
-    final double progress = isLoggedIn ? 0.33 : 0.0;
+    // Dynamic workout details or initial default state
+    final String workoutTitle = user['todayWorkoutTitle'] ?? "Beginner Fitness Start";
+    final String duration = user['todayWorkoutDuration'] ?? "N/A";
+    final String calories = user['todayWorkoutKcal'] ?? "0 kcal";
+    final String level = user['fitnessLevel'] ?? "Beginner";
+
+    final int completedExercises = (user['completedExercises'] as num?)?.toInt() ?? 0;
+    final int totalExercises = (user['totalExercises'] as num?)?.toInt() ?? 0;
+    final double progress = totalExercises > 0 ? (completedExercises / totalExercises) : 0.0;
 
     return Container(
       width: double.infinity,
@@ -86,9 +89,9 @@ class DailyWorkoutCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            isLoggedIn
-                ? "Continue your daily streak with strength exercises."
-                : "A gentle 15-minute introduction to daily fitness.",
+            totalExercises == 0
+                ? "Start your first session to build your routine."
+                : "Keep up the momentum for today's session.",
             style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 18),
@@ -107,7 +110,7 @@ class DailyWorkoutCard extends StatelessWidget {
             children: [
               const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 12)),
               Text(
-                isLoggedIn ? "2 / 6 Completed" : "0 / 4 Completed",
+                "$completedExercises / $totalExercises Completed",
                 style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
