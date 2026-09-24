@@ -3,6 +3,7 @@ import 'package:fitflow/screens/auth/login_screen.dart';
 import 'package:fitflow/screens/home/home_page.dart';
 import 'package:fitflow/screens/planner/planner_page.dart';
 import 'package:fitflow/screens/profile/profile_screen.dart';
+import 'package:fitflow/screens/progress/progress_page.dart';
 import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
@@ -23,7 +24,7 @@ class AppDrawer extends StatelessWidget {
     {"title": "Challenges", "icon": Icons.local_fire_department},
   ];
 
-  void _navigateToScreen(BuildContext context, String title) {
+  Future<void> _navigateToScreen(BuildContext context, String title) async {
     Navigator.pop(context);
 
     if (title == "Home") {
@@ -45,6 +46,23 @@ class AppDrawer extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const PlannerPage()),
+      );
+    } else if (title == "Progress") {
+      final prefs = await SharedPreferences.getInstance();
+      final userString = prefs.getString('userData');
+      Map<String, dynamic>? userData;
+
+      if (userString != null) {
+        userData = jsonDecode(userString);
+      }
+
+      if (!context.mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProgressPage(userData: userData),
+        ),
       );
     } else if (title == "Water") {
       Navigator.pushReplacement(
@@ -189,7 +207,8 @@ class AppDrawer extends StatelessWidget {
               child: FutureBuilder<SharedPreferences>(
                 future: SharedPreferences.getInstance(),
                 builder: (context, snapshot) {
-                  final isLoggedIn = snapshot.hasData && snapshot.data!.containsKey('userData');
+                  final isLoggedIn =
+                      snapshot.hasData && snapshot.data!.containsKey('userData');
 
                   return Column(
                     children: [
@@ -206,8 +225,10 @@ class AppDrawer extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                          title: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+                          leading:
+                          const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                          title: const Text("Logout",
+                              style: TextStyle(color: Colors.redAccent)),
                           onTap: () => _handleLogout(context),
                         ),
                     ],
