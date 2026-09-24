@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:fitflow/screens/progress/progress_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
+import 'package:fitflow/services/food_db_service.dart';
 import 'package:fitflow/services/water_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,14 +17,16 @@ class ActivityStats extends StatefulWidget {
 
 class _ActivityStatsState extends State<ActivityStats> {
   double _todayWaterLiters = 0.0;
+  double _todayCalories = 0.0;
+  Map<String, dynamic>? _userData;
 
   @override
   void initState() {
     super.initState();
-    _loadTodayWater();
+    _loadTodayStats();
   }
 
-  Future<void> _loadTodayWater() async {
+  Future<void> _loadTodayStats() async {
     final prefs = await SharedPreferences.getInstance();
     final userString = prefs.getString('userData');
 
@@ -30,16 +34,42 @@ class _ActivityStatsState extends State<ActivityStats> {
       final userData = jsonDecode(userString);
       final userId = userData['_id'] ?? userData['id'];
 
-      if (userId != null) {
-        final data = await WaterService.fetchTodayWaterLogs(userId);
-        if (data != null && data['success'] == true && mounted) {
-          final int totalMl = data['totalIntake'] ?? 0;
+      if (userId != null && mounted) {
+        setState(() {
+          _userData = userData;
+        });
+
+        // 1. Fetch Today's Water
+        final waterData = await WaterService.fetchTodayWaterLogs(userId);
+        if (waterData != null && waterData['success'] == true && mounted) {
+          final int totalMl = waterData['totalIntake'] ?? 0;
+          _todayWaterLiters = totalMl / 1000.0;
+        }
+
+        // 2. Fetch Today's Food Logs for Calories
+        final foodLogs = await FoodDbService.getUserDailyFoodLogs(userId, DateTime.now());
+        double totalCal = 0;
+        for (var log in foodLogs) {
+          totalCal += (log['calories'] as num? ?? 0).toDouble();
+        }
+
+        if (mounted) {
           setState(() {
-            _todayWaterLiters = totalMl / 1000.0; // Convert ml to Liters
+            _todayCalories = totalCal;
           });
         }
       }
     }
+  }
+
+  void _navigateToProgress() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProgressPage(userData: _userData),
+      ),
+    );
+    _loadTodayStats(); // Refresh stats on return
   }
 
   @override
@@ -47,6 +77,10 @@ class _ActivityStatsState extends State<ActivityStats> {
     final String waterDisplay = _todayWaterLiters > 0
         ? '${_todayWaterLiters.toStringAsFixed(1)}L'
         : (widget.activity?['water'] != null ? '${widget.activity!['water']}L' : '0L');
+
+    final String calDisplay = _todayCalories > 0
+        ? '${_todayCalories.toStringAsFixed(0)} kcal'
+        : (widget.activity?['calories'] != null ? '${widget.activity!['calories']} kcal' : '0 kcal');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -70,15 +104,15 @@ class _ActivityStatsState extends State<ActivityStats> {
             widget.activity?['workouts']?.toString() ?? '0',
             Icons.fitness_center_rounded,
             const Color(0xFF2563EB),
-            null,
+            _navigateToProgress,
           ),
           _buildStatDivider(),
           _buildStatTile(
             'Calories',
-            widget.activity?['calories'] != null ? '${widget.activity!['calories']} kcal' : '0 kcal',
+            calDisplay,
             Icons.local_fire_department_rounded,
             const Color(0xFFF97316),
-            null,
+            _navigateToProgress,
           ),
           _buildStatDivider(),
           _buildStatTile(
@@ -91,7 +125,7 @@ class _ActivityStatsState extends State<ActivityStats> {
                 context,
                 MaterialPageRoute(builder: (context) => const WaterPage()),
               );
-              _loadTodayWater();
+              _loadTodayStats();
             },
           ),
         ],
@@ -102,6 +136,7 @@ class _ActivityStatsState extends State<ActivityStats> {
   Widget _buildStatTile(String label, String value, IconData icon, Color color, VoidCallback? onTap) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
           Container(
