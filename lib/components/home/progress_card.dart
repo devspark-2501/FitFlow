@@ -14,12 +14,12 @@ class ProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = userData?['user'] as Map<String, dynamic>? ?? userData ?? {};
 
-    // Safely extract stats or fall back to zero/N/A
+    // Safely extract stats or fall back to defaults
     final String burnedKcal = user['burnedKcal']?.toString() ?? '0';
     final String activeMins = user['activeMins']?.toString() ?? '0';
     final String streakDays = user['streakDays']?.toString() ?? '0/7';
 
-    // Parse weekly activity factors (expects a List<double> from backend, or empty list)
+    // Parse weekly activity factors (expects List<double> or fallback)
     final List<dynamic> rawWeekly = user['weeklyActivity'] as List<dynamic>? ?? [];
     final List<double> weeklyData = List.generate(7, (index) {
       if (index < rawWeekly.length && rawWeekly[index] is num) {
@@ -38,13 +38,33 @@ class ProgressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Weekly Activity",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Weekly Activity",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
