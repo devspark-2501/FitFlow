@@ -1,28 +1,67 @@
+import 'package:fitflow/screens/auth/login_screen.dart';
+import 'package:fitflow/screens/progress/progress_page.dart';
 import 'package:flutter/material.dart';
 
 class DailyWorkoutCard extends StatelessWidget {
   final Map<String, dynamic>? userData;
-  final VoidCallback onStartTap;
 
   const DailyWorkoutCard({
     super.key,
     this.userData,
-    required this.onStartTap,
   });
+
+  // Calculate Daily Calorie Requirement dynamically from user age and metrics
+  double _calculateAgeBasedCalorieTarget(Map<String, dynamic> user) {
+    final int age = (user['age'] as num?)?.toInt() ?? 22;
+    final double weight = (user['weight'] as num?)?.toDouble() ?? 70.0;
+    final double height = (user['height'] as num?)?.toDouble() ?? 175.0;
+    final String gender = user['gender']?.toString().toLowerCase() ?? 'male';
+
+    // Mifflin-St Jeor BMR Equation
+    double bmr = (10 * weight) + (6.25 * height) - (5 * age);
+    if (gender == 'female') {
+      bmr -= 161;
+    } else {
+      bmr += 5;
+    }
+
+    // Multiply by light activity multiplier (1.375)
+    return bmr * 1.375;
+  }
+
+  void _handleNavigation(BuildContext context) {
+    final user = userData?['user'] as Map<String, dynamic>? ?? userData;
+
+    // Direct guests to login
+    if (userData == null || user == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } else {
+      // Direct logged-in user to ProgressPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProgressPage(userData: userData),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = userData?['user'] as Map<String, dynamic>? ?? userData ?? {};
 
-    // Dynamic workout details or initial default state
     final String workoutTitle = user['todayWorkoutTitle'] ?? "Beginner Fitness Start";
-    final String duration = user['todayWorkoutDuration'] ?? "N/A";
-    final String calories = user['todayWorkoutKcal'] ?? "0 kcal";
+    final String duration = user['todayWorkoutDuration'] ?? "30 mins";
     final String level = user['fitnessLevel'] ?? "Beginner";
 
-    final int completedExercises = (user['completedExercises'] as num?)?.toInt() ?? 0;
-    final int totalExercises = (user['totalExercises'] as num?)?.toInt() ?? 0;
-    final double progress = totalExercises > 0 ? (completedExercises / totalExercises) : 0.0;
+    final double consumedCalories = (user['todayWorkoutKcal'] as num?)?.toDouble() ?? 0.0;
+    final double calorieTarget = _calculateAgeBasedCalorieTarget(user);
+
+    // Calculate dynamic progress factor bounded between 0.0 and 1.0
+    final double progress = (consumedCalories / calorieTarget).clamp(0.0, 1.0);
 
     return Container(
       width: double.infinity,
@@ -72,7 +111,7 @@ class DailyWorkoutCard extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.bookmark_outline, color: Colors.white70),
-                onPressed: onStartTap,
+                onPressed: () => _handleNavigation(context),
                 constraints: const BoxConstraints(),
                 padding: EdgeInsets.zero,
               ),
@@ -88,18 +127,16 @@ class DailyWorkoutCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            totalExercises == 0
-                ? "Start your first session to build your routine."
-                : "Keep up the momentum for today's session.",
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          const Text(
+            "Track daily targets aligned with your personal goal.",
+            style: TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 18),
           Row(
             children: [
               _infoChip(Icons.timer_outlined, duration),
               const SizedBox(width: 16),
-              _infoChip(Icons.local_fire_department_outlined, calories),
+              _infoChip(Icons.local_fire_department_outlined, "${consumedCalories.toStringAsFixed(0)} / ${calorieTarget.toStringAsFixed(0)} kcal"),
               const SizedBox(width: 16),
               _infoChip(Icons.bar_chart_rounded, level),
             ],
@@ -108,9 +145,9 @@ class DailyWorkoutCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Progress", style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const Text("Target Progress", style: TextStyle(color: Colors.white70, fontSize: 12)),
               Text(
-                "$completedExercises / $totalExercises Completed",
+                "${(progress * 100).toStringAsFixed(0)}%",
                 style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
@@ -130,7 +167,7 @@ class DailyWorkoutCard extends StatelessWidget {
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              onPressed: onStartTap,
+              onPressed: () => _handleNavigation(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xFF1D4ED8),
