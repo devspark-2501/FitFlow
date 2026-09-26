@@ -184,13 +184,6 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 20),
             DailyWorkoutCard(
               userData: widget.userData,
-              onStartTap: () {
-                _guardAction(() {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Starting workout session...')),
-                  );
-                });
-              },
             ),
             const SizedBox(height: 20),
             QuickActions(
