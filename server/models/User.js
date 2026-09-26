@@ -19,22 +19,13 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Please add a password'],
     minlength: 6,
   },
-  age: {
-    type: Number,
-    default: 22,
-  },
-  height: {
-    type: Number, // in cm
-    default: 175,
-  },
-  weight: {
-    type: Number, // in kg
-    default: 70,
-  },
-  gender: {
+  bio: {
     type: String,
-    enum: ['male', 'female', 'other'],
-    default: 'male',
+    default: '',
+  },
+  avatarUrl: {
+    type: String,
+    default: '',
   },
   createdAt: {
     type: Date,
