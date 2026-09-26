@@ -12,6 +12,7 @@ class PlannerPage extends StatefulWidget {
 
 class _PlannerPageState extends State<PlannerPage> {
   // Initial task list state
+  
   final List<ScheduleTask> _scheduleList = [
     ScheduleTask(
       id: "1",
