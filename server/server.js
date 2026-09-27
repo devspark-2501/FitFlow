@@ -1,18 +1,27 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const foodRoutes = require('./routes/food');
 
 const app = express();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Mount the route
-app.use('/api', foodRoutes);
+// Import Routes
+const userRoutes = require('./routes/userRoutes');
 
-// Connect to Database & Start Server
-mongoose.connect('mongodb://127.0.0.1:27017/fitflow_db')
+// Mount Routes
+app.use('/api/users', userRoutes);
+
+// Connect to MongoDB & Start Server
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/fitflow';
+
+mongoose
+  .connect(MONGO_URI)
   .then(() => {
-    app.listen(5000, () => console.log('Backend server running on port 5000'));
+    console.log('MongoDB connected successfully');
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
-  .catch(err => console.error('DB Connection Error:', err));
+  .catch((err) => console.error('MongoDB connection error:', err));
