@@ -36,6 +36,14 @@ const UserSchema = new mongoose.Schema({
     enum: ['male', 'female', 'other'],
     default: 'male',
   },
+  bio: {
+    type: String,
+    default: '',
+  },
+  avatarUrl: {
+    type: String,
+    default: '',
+  },
   createdAt: {
     type: Date,
     default: Date.now,
