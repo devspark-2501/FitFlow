@@ -3,14 +3,24 @@ const router = express.Router();
 const User = require('../models/User');
 
 // @route   PUT /api/users/profile/:id
-// @desc    Update user profile details (name, bio, avatarUrl)
+// @desc    Update user profile details and metrics
 router.put('/profile/:id', async (req, res) => {
   try {
-    const { name, bio, avatarUrl } = req.body;
+    const { name, bio, avatarUrl, age, height, weight, gender } = req.body;
+
+    // Build update object with provided fields
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (bio !== undefined) updateFields.bio = bio;
+    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
+    if (age !== undefined) updateFields.age = age;
+    if (height !== undefined) updateFields.height = height;
+    if (weight !== undefined) updateFields.weight = weight;
+    if (gender !== undefined) updateFields.gender = gender;
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { $set: { name, bio, avatarUrl } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 
