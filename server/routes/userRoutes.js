@@ -1,22 +1,39 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
 const User = require('../models/User');
 
-// @route   PUT /api/users/profile/:id
-// @desc    Update user profile details and metrics
-router.put('/profile/:id', async (req, res) => {
-  try {
-    const { name, bio, avatarUrl, age, height, weight, gender } = req.body;
+// Configure storage for uploaded images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
-    // Build update object with provided fields
+const upload = multer({ storage });
+
+// @route   PUT /api/users/profile/:id
+// @desc    Update user profile details and handle optional avatar upload
+router.put('/profile/:id', upload.single('avatar'), async (req, res) => {
+  try {
+    const { name, bio, age, height, weight, gender } = req.body;
+
     const updateFields = {};
     if (name !== undefined) updateFields.name = name;
     if (bio !== undefined) updateFields.bio = bio;
-    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
     if (age !== undefined) updateFields.age = age;
     if (height !== undefined) updateFields.height = height;
     if (weight !== undefined) updateFields.weight = weight;
     if (gender !== undefined) updateFields.gender = gender;
+
+    // Handle avatar image URL path if file was uploaded
+    if (req.file) {
+      updateFields.avatarUrl = `http://10.0.2.2:5000/uploads/${req.file.filename}`;
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
