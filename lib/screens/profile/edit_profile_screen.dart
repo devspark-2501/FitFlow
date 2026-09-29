@@ -34,25 +34,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _initUserData();
   }
 
-  Future<void> _initUserData() async {
-    Map<String, dynamic>? user = _extractUserObject(widget.userData);
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _bioController.dispose();
+    super.dispose();
+  }
 
-    // If widget.userData had no valid user/id, fetch directly from local storage
+  Future<void> _initUserData() async {
+    Map<String, dynamic> user = _extractUserObject(widget.userData);
+
+    // If widget.userData had no valid user or ID, fetch directly from local storage
     if (user.isEmpty || _getUserId(user) == null) {
       final prefs = await SharedPreferences.getInstance();
       final storedString = prefs.getString('userData');
       if (storedString != null) {
         final decoded = jsonDecode(storedString);
-        user = _extractUserObject(decoded);
+        if (decoded is Map<String, dynamic>) {
+          user = _extractUserObject(decoded);
+        }
       }
     }
 
     if (mounted) {
       setState(() {
         _activeUser = user;
-        _nameController.text = user['name'] ?? user['username'] ?? '';
-        _bioController.text = user['bio'] ?? '';
-        _existingAvatarUrl = user['avatarUrl'] ?? user['avatar'];
+        _nameController.text = (user['name'] ?? user['username'] ?? '').toString();
+        _bioController.text = (user['bio'] ?? '').toString();
+        _existingAvatarUrl = user['avatarUrl']?.toString() ?? user['avatar']?.toString();
       });
     }
   }
@@ -60,10 +69,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Map<String, dynamic> _extractUserObject(Map<String, dynamic>? rawData) {
     if (rawData == null) return {};
     if (rawData.containsKey('user') && rawData['user'] is Map<String, dynamic>) {
-      return Map<String, dynamic>.from(rawData['user']);
+      return Map<String, dynamic>.from(rawData['user'] as Map);
     }
     if (rawData.containsKey('data') && rawData['data'] is Map<String, dynamic>) {
-      return Map<String, dynamic>.from(rawData['data']);
+      return Map<String, dynamic>.from(rawData['data'] as Map);
     }
     return Map<String, dynamic>.from(rawData);
   }
@@ -137,7 +146,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (response.statusCode == 200 && (data['success'] == true || data['user'] != null)) {
         final updatedUser = data['user'] ?? data;
 
-        // Persist updated user details locally in SharedPreferences
+        // Save updated details into SharedPreferences so changes stay active
         final prefs = await SharedPreferences.getInstance();
         final storedString = prefs.getString('userData');
 
@@ -187,7 +196,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Edit Profile', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
@@ -208,8 +223,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       backgroundImage: avatarImage,
                       child: avatarImage == null
                           ? Text(
-                        (_nameController.text.isNotEmpty ? _nameController.text[0] : 'U').toUpperCase(),
-                        style: const TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
+                        (_nameController.text.isNotEmpty
+                            ? _nameController.text[0]
+                            : 'U')
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 36,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       )
                           : null,
                     ),
@@ -221,7 +243,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           color: Color(0xFF2563EB),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],
@@ -238,10 +264,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: 'Username',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'Please enter a name' : null,
+                validator: (val) =>
+                val == null || val.isEmpty ? 'Please enter a name' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -249,7 +278,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: 'Bio',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.description_outlined),
                 ),
               ),
@@ -261,11 +292,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      : const Text(
+                    'Save Changes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
