@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitflow/screens/home/home_page.dart';
 import 'package:fitflow/screens/profile/profile_screen.dart';
 
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const FitFlowCode());
