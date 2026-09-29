@@ -4,6 +4,7 @@ import 'package:fitflow/screens/home/home_page.dart';
 import 'package:fitflow/screens/planner/planner_page.dart';
 import 'package:fitflow/screens/profile/profile_screen.dart';
 import 'package:fitflow/screens/progress/progress_page.dart';
+import 'package:fitflow/screens/setting/setting_page.dart';
 import 'package:fitflow/screens/timer/timer_page.dart';
 import 'package:fitflow/screens/water/water_page.dart';
 import 'package:fitflow/screens/workouts/workout_page.dart';
@@ -22,6 +23,7 @@ class AppDrawer extends StatelessWidget {
     {"title": "Water", "icon": Icons.water_drop},
     {"title": "Exercises", "icon": Icons.accessibility_new},
     {"title": "Challenges", "icon": Icons.local_fire_department},
+    {"title": "Settings", "icon": Icons.settings},
   ];
 
   Future<void> _navigateToScreen(BuildContext context, String title) async {
@@ -69,7 +71,28 @@ class AppDrawer extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (context) => const WaterPage()),
       );
+    } else if (title == "Settings") {
+      _navigateToSettings(context);
     }
+  }
+
+  Future<void> _navigateToSettings(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userString = prefs.getString('userData');
+    Map<String, dynamic>? userData;
+
+    if (userString != null) {
+      userData = jsonDecode(userString);
+    }
+
+    if (!context.mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingPage(userData: userData),
+      ),
+    );
   }
 
   Future<void> _navigateToProfile(BuildContext context) async {
