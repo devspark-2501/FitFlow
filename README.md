@@ -1,6 +1,5 @@
 # fitflow
-
-A new Flutter project.
+A modern fitness app built with Flutter, focused on workouts, planning and progress tracking.
 
 ## Getting Started
 
