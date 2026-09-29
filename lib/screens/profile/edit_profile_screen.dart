@@ -20,6 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _bioController;
 
+  Map<String, dynamic>? _activeUser;
   File? _selectedImageFile;
   Uint8List? _webImageBytes;
   String? _existingAvatarUrl;
@@ -28,22 +29,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = _extractUserObject(widget.userData);
-    _nameController = TextEditingController(text: user['name'] ?? '');
-    _bioController = TextEditingController(text: user['bio'] ?? '');
-    _existingAvatarUrl = user['avatarUrl'];
+    _nameController = TextEditingController();
+    _bioController = TextEditingController();
+    _initUserData();
+  }
+
+  Future<void> _initUserData() async {
+    Map<String, dynamic>? user = _extractUserObject(widget.userData);
+
+    // If widget.userData had no valid user/id, fetch directly from local storage
+    if (user.isEmpty || _getUserId(user) == null) {
+      final prefs = await SharedPreferences.getInstance();
+      final storedString = prefs.getString('userData');
+      if (storedString != null) {
+        final decoded = jsonDecode(storedString);
+        user = _extractUserObject(decoded);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _activeUser = user;
+        _nameController.text = user['name'] ?? user['username'] ?? '';
+        _bioController.text = user['bio'] ?? '';
+        _existingAvatarUrl = user['avatarUrl'] ?? user['avatar'];
+      });
+    }
   }
 
   Map<String, dynamic> _extractUserObject(Map<String, dynamic>? rawData) {
     if (rawData == null) return {};
     if (rawData.containsKey('user') && rawData['user'] is Map<String, dynamic>) {
-      return rawData['user'] as Map<String, dynamic>;
+      return Map<String, dynamic>.from(rawData['user']);
     }
-    return rawData;
+    if (rawData.containsKey('data') && rawData['data'] is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(rawData['data']);
+    }
+    return Map<String, dynamic>.from(rawData);
   }
 
-  String? _getUserId(Map<String, dynamic> user) {
-    return user['_id'] ?? user['id'] ?? user['userId'];
+  String? _getUserId(Map<String, dynamic>? user) {
+    if (user == null || user.isEmpty) return null;
+    final id = user['_id'] ?? user['id'] ?? user['userId'];
+    return id?.toString();
   }
 
   Future<void> _pickImage() async {
@@ -69,8 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final user = _extractUserObject(widget.userData);
-    final userId = _getUserId(user);
+    final userId = _getUserId(_activeUser);
 
     if (userId == null || userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +109,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // For Android Emulator use 10.0.2.2; for real devices/desktop use localhost or host IP
       final baseUrl = kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
       final uri = Uri.parse('$baseUrl/api/users/profile/$userId');
 
@@ -108,15 +134,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        final updatedUser = data['user'];
+      if (response.statusCode == 200 && (data['success'] == true || data['user'] != null)) {
+        final updatedUser = data['user'] ?? data;
 
-        // Persist locally in SharedPreferences
+        // Persist updated user details locally in SharedPreferences
         final prefs = await SharedPreferences.getInstance();
-        final fullUserData = widget.userData ?? {};
-        if (fullUserData.containsKey('user')) {
-          fullUserData['user'] = updatedUser;
-          await prefs.setString('userData', jsonEncode(fullUserData));
+        final storedString = prefs.getString('userData');
+
+        if (storedString != null) {
+          final decoded = jsonDecode(storedString);
+          if (decoded is Map<String, dynamic> && decoded.containsKey('user')) {
+            decoded['user'] = updatedUser;
+            await prefs.setString('userData', jsonEncode(decoded));
+          } else {
+            await prefs.setString('userData', jsonEncode(updatedUser));
+          }
         } else {
           await prefs.setString('userData', jsonEncode(updatedUser));
         }
