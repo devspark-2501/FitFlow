@@ -121,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const ActivityStats(),
               const SizedBox(height: 20),
 
+
               const MyPlansDashboard(),
               const SizedBox(height: 24),
             ],
