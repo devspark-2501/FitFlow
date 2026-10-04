@@ -44,17 +44,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _initUserData() async {
     Map<String, dynamic> user = _extractUserObject(widget.userData);
 
-    // If widget.userData had no valid user or ID, fetch directly from local storage
+    // If widget.userData had no valid user/id, inspect local SharedPreferences
     if (user.isEmpty || _getUserId(user) == null) {
       final prefs = await SharedPreferences.getInstance();
       final storedString = prefs.getString('userData');
       if (storedString != null) {
-        final decoded = jsonDecode(storedString);
-        if (decoded is Map<String, dynamic>) {
-          user = _extractUserObject(decoded);
+        try {
+          final decoded = jsonDecode(storedString);
+          if (decoded is Map<String, dynamic>) {
+            user = _extractUserObject(decoded);
+          }
+        } catch (e) {
+          debugPrint('Error parsing stored userData: $e');
         }
       }
     }
+
+    debugPrint('EDIT PROFILE ACTIVE USER DATA: $user');
+    debugPrint('DETECTED USER ID: ${_getUserId(user)}');
 
     if (mounted) {
       setState(() {
@@ -68,19 +75,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Map<String, dynamic> _extractUserObject(Map<String, dynamic>? rawData) {
     if (rawData == null) return {};
-    if (rawData.containsKey('user') && rawData['user'] is Map<String, dynamic>) {
+    if (rawData.containsKey('user') && rawData['user'] is Map) {
       return Map<String, dynamic>.from(rawData['user'] as Map);
     }
-    if (rawData.containsKey('data') && rawData['data'] is Map<String, dynamic>) {
+    if (rawData.containsKey('data') && rawData['data'] is Map) {
       return Map<String, dynamic>.from(rawData['data'] as Map);
+    }
+    if (rawData.containsKey('result') && rawData['result'] is Map) {
+      return Map<String, dynamic>.from(rawData['result'] as Map);
     }
     return Map<String, dynamic>.from(rawData);
   }
 
   String? _getUserId(Map<String, dynamic>? user) {
     if (user == null || user.isEmpty) return null;
-    final id = user['_id'] ?? user['id'] ?? user['userId'];
-    return id?.toString();
+
+    final idCandidates = [
+      user['_id'],
+      user['id'],
+      user['userId'],
+      user['user_id'],
+      if (user['user'] is Map) user['user']['_id'],
+      if (user['user'] is Map) user['user']['id'],
+    ];
+
+    for (final candidate in idCandidates) {
+      if (candidate != null && candidate.toString().trim().isNotEmpty) {
+        return candidate.toString().trim();
+      }
+    }
+    return null;
   }
 
   Future<void> _pickImage() async {
@@ -110,7 +134,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (userId == null || userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Could not identify valid User ID.')),
+        SnackBar(
+          content: Text('Error: Could not identify valid User ID. Data payload: ${_activeUser.toString()}'),
+        ),
       );
       return;
     }
@@ -146,7 +172,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (response.statusCode == 200 && (data['success'] == true || data['user'] != null)) {
         final updatedUser = data['user'] ?? data;
 
-        // Save updated details into SharedPreferences so changes stay active
         final prefs = await SharedPreferences.getInstance();
         final storedString = prefs.getString('userData');
 
