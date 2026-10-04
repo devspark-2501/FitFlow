@@ -2,13 +2,20 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+
+// Ensure destination folder exists before multer processes files
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure storage for uploaded images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -18,7 +25,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // @route   PUT /api/users/profile/:identifier
-// @desc    Update user profile details (accepts either Mongo ObjectId or Email)
+// @desc    Update user profile details (accepts Mongo ObjectId or Email)
 router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -32,7 +39,7 @@ router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => 
     if (weight !== undefined) updateFields.weight = weight;
     if (gender !== undefined) updateFields.gender = gender;
 
-    // Handle uploaded avatar file
+    // Handle avatar image URL path if file was uploaded
     if (req.file) {
       const host = req.get('host') || 'localhost:5000';
       const protocol = req.protocol || 'http';
@@ -44,10 +51,11 @@ router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => 
       ? { _id: identifier }
       : { email: identifier };
 
+    // Updated to use returnDocument: 'after' to clear Mongoose deprecation warning
     const updatedUser = await User.findOneAndUpdate(
       query,
       { $set: updateFields },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedUser) {
