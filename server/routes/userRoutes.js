@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 // Configure storage for uploaded images
@@ -16,10 +17,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// @route   PUT /api/users/profile/:id
-// @desc    Update user profile details and handle optional avatar upload
-router.put('/profile/:id', upload.single('avatar'), async (req, res) => {
+// @route   PUT /api/users/profile/:identifier
+// @desc    Update user profile details (accepts either Mongo ObjectId or Email)
+router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => {
   try {
+    const { identifier } = req.params;
     const { name, bio, age, height, weight, gender } = req.body;
 
     const updateFields = {};
@@ -30,13 +32,20 @@ router.put('/profile/:id', upload.single('avatar'), async (req, res) => {
     if (weight !== undefined) updateFields.weight = weight;
     if (gender !== undefined) updateFields.gender = gender;
 
-    // Handle avatar image URL path if file was uploaded
+    // Handle uploaded avatar file
     if (req.file) {
-      updateFields.avatarUrl = `http://10.0.2.2:5000/uploads/${req.file.filename}`;
+      const host = req.get('host') || 'localhost:5000';
+      const protocol = req.protocol || 'http';
+      updateFields.avatarUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
+    // Support lookup by MongoDB ObjectId or Email address
+    const query = mongoose.Types.ObjectId.isValid(identifier)
+      ? { _id: identifier }
+      : { email: identifier };
+
+    const updatedUser = await User.findOneAndUpdate(
+      query,
       { $set: updateFields },
       { new: true, runValidators: true }
     );
@@ -51,6 +60,7 @@ router.put('/profile/:id', upload.single('avatar'), async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
+    console.error('Error updating profile:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
