@@ -44,8 +44,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _initUserData() async {
     Map<String, dynamic> user = _extractUserObject(widget.userData);
 
-    // If widget.userData had no valid user/id, inspect local SharedPreferences
-    if (user.isEmpty || _getUserId(user) == null) {
+    // If widget.userData lacks ID or Email, inspect local SharedPreferences
+    if (user.isEmpty || _getUserIdOrEmail(user) == null) {
       final prefs = await SharedPreferences.getInstance();
       final storedString = prefs.getString('userData');
       if (storedString != null) {
@@ -61,7 +61,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     debugPrint('EDIT PROFILE ACTIVE USER DATA: $user');
-    debugPrint('DETECTED USER ID: ${_getUserId(user)}');
+    debugPrint('DETECTED USER IDENTIFIER: ${_getUserIdOrEmail(user)}');
 
     if (mounted) {
       setState(() {
@@ -87,21 +87,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Map<String, dynamic>.from(rawData);
   }
 
-  String? _getUserId(Map<String, dynamic>? user) {
+  String? _getUserIdOrEmail(Map<String, dynamic>? user) {
     if (user == null || user.isEmpty) return null;
 
-    final idCandidates = [
+    final candidates = [
       user['_id'],
       user['id'],
       user['userId'],
       user['user_id'],
       if (user['user'] is Map) user['user']['_id'],
       if (user['user'] is Map) user['user']['id'],
+      user['email'], // Fallback to email if MongoDB ID is not found
     ];
 
-    for (final candidate in idCandidates) {
-      if (candidate != null && candidate.toString().trim().isNotEmpty) {
-        return candidate.toString().trim();
+    for (final item in candidates) {
+      if (item != null && item.toString().trim().isNotEmpty) {
+        return item.toString().trim();
       }
     }
     return null;
@@ -130,12 +131,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final userId = _getUserId(_activeUser);
+    final identifier = _getUserIdOrEmail(_activeUser);
 
-    if (userId == null || userId.isEmpty) {
+    if (identifier == null || identifier.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: Could not identify valid User ID. Data payload: ${_activeUser.toString()}'),
+          content: Text('Error: Could not identify valid User ID or Email.'),
         ),
       );
       return;
@@ -145,7 +146,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final baseUrl = kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
-      final uri = Uri.parse('$baseUrl/api/users/profile/$userId');
+      final uri = Uri.parse('$baseUrl/api/users/profile/$identifier');
 
       var request = http.MultipartRequest('PUT', uri);
       request.fields['name'] = _nameController.text.trim();
