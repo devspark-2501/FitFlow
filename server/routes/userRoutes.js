@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Preflight OPTIONS handler specifically for profile route
+// Preflight OPTIONS handler
 router.options('/profile/:identifier', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
@@ -33,7 +33,7 @@ router.options('/profile/:identifier', (req, res) => {
 });
 
 // @route   PUT /api/users/profile/:identifier
-// @desc    Update user profile details (accepts Mongo ObjectId or Email)
+// @desc    Update user profile details
 router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -47,17 +47,16 @@ router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => 
     if (weight !== undefined) updateFields.weight = weight;
     if (gender !== undefined) updateFields.gender = gender;
 
-    // Handle avatar image URL path if file was uploaded
     if (req.file) {
       const host = req.get('host') || 'localhost:5000';
       const protocol = req.protocol || 'http';
       updateFields.avatarUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     }
 
-    // Support lookup by MongoDB ObjectId or Email address
+    // Support lookup by MongoDB ObjectId OR case-insensitive email
     const query = mongoose.Types.ObjectId.isValid(identifier)
       ? { _id: identifier }
-      : { email: identifier };
+      : { email: new RegExp(`^${identifier.trim()}$`, 'i') };
 
     const updatedUser = await User.findOneAndUpdate(
       query,
@@ -66,7 +65,11 @@ router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => 
     );
 
     if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      console.log(`[USER UPDATE ERROR] No user found matching: ${identifier}`);
+      return res.status(404).json({
+        success: false,
+        message: `User not found for identifier: ${identifier}`,
+      });
     }
 
     res.status(200).json({
