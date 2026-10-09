@@ -6,7 +6,7 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
-// Ensure destination folder exists before multer processes files
+// Ensure destination folder exists
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -23,6 +23,14 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+// Preflight OPTIONS handler specifically for profile route
+router.options('/profile/:identifier', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return res.sendStatus(200);
+});
 
 // @route   PUT /api/users/profile/:identifier
 // @desc    Update user profile details (accepts Mongo ObjectId or Email)
@@ -51,7 +59,6 @@ router.put('/profile/:identifier', upload.single('avatar'), async (req, res) => 
       ? { _id: identifier }
       : { email: identifier };
 
-    // Updated to use returnDocument: 'after' to clear Mongoose deprecation warning
     const updatedUser = await User.findOneAndUpdate(
       query,
       { $set: updateFields },
