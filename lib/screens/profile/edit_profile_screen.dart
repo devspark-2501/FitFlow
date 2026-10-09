@@ -44,7 +44,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _initUserData() async {
     Map<String, dynamic> user = _extractUserObject(widget.userData);
 
-    // If widget.userData lacks ID or Email, inspect local SharedPreferences
     if (user.isEmpty || _getUserIdOrEmail(user) == null) {
       final prefs = await SharedPreferences.getInstance();
       final storedString = prefs.getString('userData');
@@ -97,7 +96,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       user['user_id'],
       if (user['user'] is Map) user['user']['_id'],
       if (user['user'] is Map) user['user']['id'],
-      user['email'], // Fallback to email if MongoDB ID is not found
+      user['email'],
     ];
 
     for (final item in candidates) {
@@ -135,9 +134,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (identifier == null || identifier.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: Could not identify valid User ID or Email.'),
-        ),
+        const SnackBar(content: Text('Error: Could not identify valid User ID or Email.')),
       );
       return;
     }
@@ -148,26 +145,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final baseUrl = kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
       final uri = Uri.parse('$baseUrl/api/users/profile/$identifier');
 
-      var request = http.MultipartRequest('PUT', uri);
-      request.fields['name'] = _nameController.text.trim();
-      request.fields['bio'] = _bioController.text.trim();
+      http.Response response;
 
-      if (_selectedImageFile != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('avatar', _selectedImageFile!.path),
+      // If no new image was picked, send a standard JSON PUT request
+      if (_selectedImageFile == null && _webImageBytes == null) {
+        response = await http.put(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'name': _nameController.text.trim(),
+            'bio': _bioController.text.trim(),
+          }),
         );
-      } else if (_webImageBytes != null) {
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'avatar',
-            _webImageBytes!,
-            filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          ),
-        );
+      } else {
+        // If an image was picked, send a Multipart request
+        var request = http.MultipartRequest('PUT', uri);
+        request.fields['name'] = _nameController.text.trim();
+        request.fields['bio'] = _bioController.text.trim();
+
+        if (_selectedImageFile != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath('avatar', _selectedImageFile!.path),
+          );
+        } else if (_webImageBytes != null) {
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'avatar',
+              _webImageBytes!,
+              filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            ),
+          );
+        }
+
+        final streamedResponse = await request.send();
+        response = await http.Response.fromStream(streamedResponse);
       }
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && (data['success'] == true || data['user'] != null)) {
